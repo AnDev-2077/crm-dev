@@ -3,13 +3,13 @@ import { Link } from "react-router-dom"
 import {
   BarChart3,
   Bell,
-  FileText,
+
   ShoppingCart,
   BanknoteArrowDown,
   PackageSearch,
   SquareChartGantt,
   Home,
-  MessageSquare,
+
   Settings,
   Users,
   Activity,
@@ -64,13 +64,14 @@ const navigationItems = [
         title: "Clientes",
         url: "/home/clients-panel",
         icon: Users,
-        badge: "12",
+
       },
       
       {
         title: "Proveedores",
         url: "/home/providers-panel",
         icon: Users,
+
       },
       {
         title: "Productos",
@@ -81,19 +82,19 @@ const navigationItems = [
         title: "Compras",
         url: "/home/shopping-panel",
         icon: ShoppingCart,
-        badge: "3",
+
       },
       {
         title: "Ventas",
         url: "/home/sales-panel",
         icon: BanknoteArrowDown,
-        badge: "3",
-      },
+
+      },      
       {
         title: "Pedidos",
         url: "/home/orders-panel",
         icon: PackageSearch,
-        badge: "3",
+
       },
     ],
   },

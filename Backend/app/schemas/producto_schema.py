@@ -8,9 +8,8 @@ class ProductoSchema(BaseModel):
     descripcion: Optional[str] = None
     precio: Optional[float] = None
     stock: Optional[int] = None
-    tUnidad: Optional[str] = None
-
-    
+    tUnidad: Optional[str] = None 
+    fechaIngreso: Optional[datetime] = None   #idk
     
 class ProductCreate(ProductoSchema):
     pass
