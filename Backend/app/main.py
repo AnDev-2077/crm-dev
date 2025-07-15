@@ -1,7 +1,21 @@
 from fastapi import FastAPI
+from app.routes.provedor_producto import router as provedor_producto_router
+from sqlalchemy import text
 
 app = FastAPI()
+app.include_router(provedor_producto_router)
 
 @app.get("/")
-def root():
+def root(): 
     return {"message": "Hello, World!"}
+
+@app.get("/db-status")
+def db_status():
+    try:
+        from app.database import SessionLocal
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        return {"status": "ok", "message": "Conexión exitosa a la base de datos"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
