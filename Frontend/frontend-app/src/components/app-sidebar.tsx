@@ -1,15 +1,15 @@
-import type * as React from "react"
+import * as React from "react"
+import { useState, useEffect } from "react"
+import axios from "axios"
 import { Link } from "react-router-dom"
 import {
   BarChart3,
   Bell,
-
-  ShoppingCart,
+    ShoppingCart,
   BanknoteArrowDown,
   PackageSearch,
   SquareChartGantt,
-  Home,
-
+  Home, 
   Settings,
   Users,
   Activity,
@@ -33,89 +33,119 @@ import {
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
 
-// Datos de navegación
-const navigationItems = [
-  {
-    title: "Principal",
-    items: [
-      {
-        title: "Dashboard",
-        url: "/home",
-        icon: Home,
-        isActive: true,
-      },
-      {
-        title: "Analíticas",
-        url: "#",
-        icon: BarChart3,
-        badge: "Pro",
-      },
-      {
-        title: "Actividad",
-        url: "#",
-        icon: Activity,
-      },
-    ],
-  },
-  {
-    title: "Gestión",
-    items: [
-      {
-        title: "Clientes",
-        url: "/home/clients-panel",
-        icon: Users,
-
-      },
-      
-      {
-        title: "Proveedores",
-        url: "/home/providers-panel",
-        icon: Users,
-
-      },
-      {
-        title: "Productos",
-        url: "/home/products-panel",
-        icon: SquareChartGantt,
-      },
-      {
-        title: "Compras",
-        url: "/home/shopping-panel",
-        icon: ShoppingCart,
-
-      },
-      {
-        title: "Ventas",
-        url: "/home/sales-panel",
-        icon: BanknoteArrowDown,
-
-      },      
-      {
-        title: "Pedidos",
-        url: "/home/orders-panel",
-        icon: PackageSearch,
-
-      },
-    ],
-  },
-  {
-    title: "Sistema",
-    items: [
-      {
-        title: "Notificaciones",
-        url: "#",
-        icon: Bell,
-      },
-      {
-        title: "Configuración",
-        url: "#",
-        icon: Settings,
-      },
-    ],
-  },
-]
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [productCount, setProductCount] = useState<number>(0)
+  const [providerCount, setProviderCount] = useState<number>(0)
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const [productsRes, providersRes] = await Promise.all([
+          axios.get("http://127.0.0.1:8000/productos/"),
+          axios.get("http://127.0.0.1:8000/proveedores/"),
+        ])
+        setProductCount(productsRes.data.length)
+        setProviderCount(providersRes.data.length)
+      } catch (error) {
+        console.error("Error al obtener los conteos:", error)
+      }
+    }
+
+    fetchCounts()
+  }, [])
+
+  const navigationItems = [
+    {
+      title: "Principal",
+      items: [
+        {
+          title: "Dashboard",
+          url: "/home",
+          icon: Home,
+          isActive: true,
+        },
+        {
+          title: "Analíticas",
+          url: "#",
+          icon: BarChart3,
+          badge: "Pro",
+          isActive: false,
+        },
+        {
+          title: "Actividad",
+          url: "#",
+          icon: Activity,
+          isActive: false,
+        },
+        
+      ],
+    },
+    {
+      title: "Gestión",
+      items: [
+        {
+          title: "Clientes",
+          url: "/home/clients-panel",
+          icon: Users,
+          isActive: false,
+        },
+        {
+          title: "Proveedores",
+          url: "/home/providers-panel",
+          icon: Users,
+          badge: providerCount || undefined,
+          isActive: false,
+        },
+        {
+          title: "Productos",
+          url: "/home/products-panel",
+          icon: SquareChartGantt,
+          badge: productCount || undefined,
+          isActive: false,
+        }, 
+        {
+          title: "Compras",
+          url: "/home/shopping-panel",
+          icon: ShoppingCart,
+          isActive: false,
+        },
+        {
+          title: "Ventas",
+          url: "/home/sales-panel",
+          icon: BanknoteArrowDown,
+          isActive: false,
+        },
+        {
+          title: "Pedidos",
+          url: "/home/orders-panel",
+          icon: PackageSearch,
+          isActive: false,
+        },
+        {
+          title: "Kardex",
+          url: "/home/orders-panel",
+          icon: PackageSearch,
+          isActive: false,
+        },
+      ],
+    },
+    {
+      title: "Sistema",
+      items: [
+        {
+          title: "Notificaciones",
+          url: "#",
+          icon: Bell,
+          isActive: false,
+        },
+        {
+          title: "Configuración",
+          url: "#",
+          icon: Settings,
+          isActive: false,
+        },
+      ],
+    },  ]
   return (
     <Sidebar side="left" {...props}>
       <SidebarHeader>
@@ -138,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={item.isActive}>
+                    <SidebarMenuButton asChild isActive={!!item.isActive}>
                       <Link to={item.url} className="flex items-center gap-2">
                         <item.icon className="size-4" />
                         <span>{item.title}</span>

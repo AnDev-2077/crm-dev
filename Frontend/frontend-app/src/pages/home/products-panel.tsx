@@ -40,6 +40,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+import { useNavigate } from "react-router-dom";
+
 export type Productos = {
   id: number
   nombre: string
@@ -114,6 +116,15 @@ export const columns: ColumnDef<Productos>[] = [
     cell: ({ row }) => <div>{row.getValue("tUnidad")}</div>,
   },
   {
+  accessorKey: "proveedores",
+  header: "Proveedor",
+  cell: ({ row }) => {
+    const proveedores = row.getValue("proveedores") as Productos[]
+    if (!proveedores || proveedores.length === 0) return <div>—</div>
+    return <div>{proveedores.map(p => p.nombre).join(", ")}</div>
+  },
+  },
+  {
     accessorKey: "fechaIngreso",
     header: "Fecha de Ingreso",
     cell: ({ row }) => {
@@ -132,6 +143,7 @@ export const columns: ColumnDef<Productos>[] = [
       return <div>{formatted}</div>
     },
   },
+  
   {
     id: "actions",
     enableHiding: false,
@@ -175,6 +187,7 @@ export default function DataTableDemo() {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     const fetchProducts = async () => {
@@ -252,6 +265,13 @@ export default function DataTableDemo() {
               ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button
+          variant="outline"
+          className="ml-2"
+          onClick={() => navigate(`/home/products-panels`)}
+        >
+          Agregar Producto
+        </Button>
       </div>
 
       <div className="rounded-md border">

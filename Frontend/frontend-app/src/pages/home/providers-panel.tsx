@@ -90,10 +90,17 @@ export const columns: ColumnDef<Provider>[] = [
     cell: ({ row }) => <div>{row.getValue("nombre")}</div>,
   },
   {
-    accessorKey: "correo",
-    header: "Correo",
+    accessorKey: "documento",
+    header: "Documento",
     cell: ({ row }) => (
-      <div className="lowercase">{row.getValue("correo")}</div>
+      <div className="lowercase">{row.getValue("documento")}</div>
+    ),
+  },
+  {
+    accessorKey: "tipoDocumento",
+    header: "Tipo de Documento",
+    cell: ({ row }) => (
+      <div className="lowercase">{row.getValue("tipoDocumento")}</div>
     ),
   },
   {
@@ -101,6 +108,13 @@ export const columns: ColumnDef<Provider>[] = [
     header: "Teléfono",
     cell: ({ row }) => <div>{row.getValue("telefono")}</div>,
   },
+  {
+    accessorKey: "correo",
+    header: "Correo",
+    cell: ({ row }) => (
+      <div className="lowercase">{row.getValue("correo")}</div>
+    ),
+  },  
   {
     accessorKey: "direccion",
     header: "Dirección",

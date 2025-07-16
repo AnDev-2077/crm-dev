@@ -17,5 +17,7 @@ class Proveedor(Base):
     telefono = Column(String(20), nullable=True)
     direccion = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True, nullable=True)
+    documento = Column(String(100), nullable=True)
+    tipoDocumento = Column(String(50), nullable= False, default="RUC")
 
     productos = relationship("Producto", secondary="proveedor_producto", back_populates="proveedores")

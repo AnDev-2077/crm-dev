@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from ..database import SessionLocal
 from ..models.productos import Producto
 from ..models.proveedores import Proveedor
@@ -18,12 +18,24 @@ def get_db():
 
 @router.get("/productos/", response_model=list[ProductOut])
 def read_productos(db: Session = Depends(get_db)):
-    productos = db.query(Producto).all()
+    productos = db.query(Producto).options(joinedload(Producto.proveedores)).all()
     return productos
 
 @router.post("/productos/", response_model=ProductOut)
 def create_producto(producto: ProductoSchema, db: Session = Depends(get_db)):
-    db_producto = Producto(**producto.dict())
+
+    proveedor_id = producto.proveedor_id
+    producto_data = producto.dict(exclude={"proveedor_id"})
+
+
+    db_producto = Producto(**producto_data)
+
+    if proveedor_id:
+        proveedor = db.query(Proveedor).filter(Proveedor.id == proveedor_id).first()
+        if not proveedor:
+            raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+        db_producto.proveedores.append(proveedor)
+
     db.add(db_producto)
     db.commit()
     db.refresh(db_producto)
