@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session, joinedload
 from ..database import SessionLocal
 from ..models.productos import Producto
@@ -6,6 +6,8 @@ from ..models.proveedores import Proveedor
 from ..schemas.proveedores_schema import ProveedorCreate, ProveedorOut
 from ..schemas.producto_schema import ProductOut, ProductCreate, ProductoSchema
 from datetime import datetime
+from pathlib import Path
+import uuid
 
 router = APIRouter()
 
@@ -21,12 +23,47 @@ def read_productos(db: Session = Depends(get_db)):
     productos = db.query(Producto).options(joinedload(Producto.proveedores)).all()
     return productos
 
+IMAGES_DIR = Path("images")
+IMAGES_DIR.mkdir(exist_ok=True)
+
 @router.post("/productos/", response_model=ProductOut)
-def create_producto(producto: ProductoSchema, db: Session = Depends(get_db)):
-
-    proveedor_id = producto.proveedor_id
-    producto_data = producto.dict(exclude={"proveedor_id"})
-
+async def create_producto(
+    nombre: str = Form(...),
+    descripcion: str = Form(None),
+    precio: float = Form(None),
+    stock: int = Form(None),
+    tUnidad: str = Form(None),
+    proveedor_id: int = Form(None),
+    file: UploadFile = File(None),  # Imagen opcional
+    db: Session = Depends(get_db)
+):
+    # Crear datos del producto
+    producto_data = {
+        "nombre": nombre,
+        "descripcion": descripcion,
+        "precio": precio,
+        "stock": stock,
+        "tUnidad": tUnidad
+    }
+    
+    # Manejar imagen si se proporciona
+    if file and file.filename:
+        # Validar tipo de archivo
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
+        
+        # Generar nombre único y guardar
+        file_extension = file.filename.split(".")[-1]
+        unique_filename = f"{uuid.uuid4()}.{file_extension}"
+        file_path = IMAGES_DIR / unique_filename
+        
+        try:
+            contents = await file.read()
+            with open(file_path, "wb") as f:
+                f.write(contents)
+            producto_data["imagen"] = f"/images/{unique_filename}"
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Error al guardar la imagen")
 
     db_producto = Producto(**producto_data)
 

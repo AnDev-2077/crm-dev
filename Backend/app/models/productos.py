@@ -15,6 +15,6 @@ class Producto(Base):
     tUnidad = Column(String(100), nullable=True)    
     fechaIngreso = Column(TIMESTAMP, nullable=True, server_default=func.now())
     is_active = Column(Boolean, default=True, nullable=True)    
-    imagen = Column(Text, nullable=True) 
+    imagen = Column(String(255), nullable=True) 
 
     proveedores = relationship("Proveedor", secondary="proveedor_producto", back_populates="productos")

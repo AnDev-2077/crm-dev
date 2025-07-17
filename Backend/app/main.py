@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.provedor_producto import router as provedor_producto_router
 from sqlalchemy import text
+from fastapi.staticfiles import StaticFiles
 import os
 
 app = FastAPI()
@@ -15,6 +16,7 @@ app.add_middleware(
 )
 
 app.include_router(provedor_producto_router)
+app.mount("/images", StaticFiles(directory="images"), name="images")
 
 imagenes_path = os.path.join(os.path.dirname(__file__), "..", "images")
 os.makedirs(imagenes_path, exist_ok=True)
