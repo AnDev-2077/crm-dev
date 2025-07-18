@@ -20,7 +20,7 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -28,7 +28,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
@@ -52,29 +51,24 @@ export type Productos = {
   fechaIngreso: string
 }
 
-export const columns: ColumnDef<Productos>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
+
+export default function DataTableDemo() {
+
+  const navigate = useNavigate();
+
+  const [productos, setProductos] = React.useState<Productos[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  )
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
+  const [globalFilter, setGlobalFilter] = React.useState("")
+
+  
+const columns: ColumnDef<Productos>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -103,7 +97,7 @@ export const columns: ColumnDef<Productos>[] = [
   {
     accessorKey: "precio",
     header: "Precio",
-    cell: ({ row }) => <div>{row.getValue("precio")}</div>,
+    cell: ({ row }) => <div>S/. {row.getValue("precio")}</div>,
   },
   {
     accessorKey: "stock",
@@ -151,6 +145,7 @@ export const columns: ColumnDef<Productos>[] = [
       const products = row.original
       const productId = products.id.toString()
 
+            // AGREGAR EDITAR PRODUCTO Y ELIMINAR PRODUCTO
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -160,34 +155,17 @@ export const columns: ColumnDef<Productos>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(productId)}
-            >
-              Copy product ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
+            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+
+            <DropdownMenuItem onClick={() => navigate(`/home/products-panels/${productId}`)}>
+            Ver producto
+          </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
     },
   },
 ]
-
-
-export default function DataTableDemo() {
-  const [productos, setProductos] = React.useState<Productos[]>([])
-  const [loading, setLoading] = React.useState(true)
-
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
-  const [globalFilter, setGlobalFilter] = React.useState("")
-  const navigate = useNavigate();
 
   React.useEffect(() => {
     const fetchProducts = async () => {

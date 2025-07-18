@@ -12,7 +12,6 @@ class ProductoSchema(BaseModel):
     stock: Optional[int] = None
     tUnidad: Optional[str] = None 
     fechaIngreso: Optional[datetime] = None   #idk
-    proveedor_id: Optional[int] = None 
     imagen: Optional[str] = None 
     
 class ProductCreate(ProductoSchema):

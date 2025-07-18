@@ -18,7 +18,7 @@ import ProductsPanel from "@/pages/home/products-panel"
 import ShoppingPanel from "@/pages/home/shopping-panel"
 import SalesPanel from "@/pages/home/sales-panel"
 import OrdersPanel from "@/pages/home/orders-panel"
-
+import KardexPanel from "@/pages/home/kardex-panel"
 
 export default function HomePage() {
   return (
@@ -51,6 +51,7 @@ export default function HomePage() {
             <Route path="shopping-panel" element={<ShoppingPanel/>}></Route>
             <Route path="sales-panel" element={<SalesPanel/>}></Route>
             <Route path="orders-panel" element={<OrdersPanel/>}></Route>
+            <Route path="kardex-panel" element={<KardexPanel/>}></Route>
           </Routes>
 
         </div>

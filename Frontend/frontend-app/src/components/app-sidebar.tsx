@@ -123,7 +123,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
         {
           title: "Kardex",
-          url: "/home/orders-panel",
+          url: "/home/kardex-panel",
           icon: PackageSearch,
           isActive: false,
         },

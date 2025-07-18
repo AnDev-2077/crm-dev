@@ -5,7 +5,7 @@ import { useState } from "react"
 import axios from "axios"
 import { Upload, X } from "lucide-react"
 import { toast } from "sonner"
-
+import { useRef } from "react";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,8 +35,9 @@ type Proveedor = {
 
 export default function AddProductForm() {
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<Proveedor | null>(null)
-  const [productImage, setProductImage] = useState<File | null>(null) // Cambiar a File en lugar de string
-  const [imagePreview, setImagePreview] = useState<string | null>(null) 
+  const [productImage, setProductImage] = useState<File | null>(null) 
+  const [imagePreview, setImagePreview] = useState<string | null>(null)   
+const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
     stock: "",
@@ -50,7 +51,7 @@ export default function AddProductForm() {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      setProductImage(file) // Guardar el archivo
+      setProductImage(file) 
       const reader = new FileReader()
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string)
@@ -62,6 +63,9 @@ export default function AddProductForm() {
   const removeImage = () => {
     setProductImage(null)
     setImagePreview(null)
+      if (fileInputRef.current) {
+    fileInputRef.current.value = ""; 
+  }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -103,13 +107,14 @@ export default function AddProductForm() {
       })
       toast.success("Producto guardado exitosamente")
       
-      // Limpiar formulario
+
       setFormData({
         nombre: "",
         stock: "",
         precio: "",
         tUnidad: "",
         descripcion: "",
+        
       })
       setProveedorSeleccionado(null)
       setProductImage(null)
@@ -173,7 +178,7 @@ export default function AddProductForm() {
                   <div className="space-y-2">
                     <Label htmlFor="precio">Precio *</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">S/.</span>
                       <Input
                         id="precio"
                         type="number"
@@ -229,75 +234,77 @@ export default function AddProductForm() {
                 <CardTitle>Imagen del Producto</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  {imagePreview ? (
-                    <div className="relative">
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center relative flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition"
+                onClick={() => {
+                  if (!imagePreview) fileInputRef.current?.click();
+                }}
+              >
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Vista previa del producto"
+                      className="mx-auto rounded-lg object-cover"
+                      style={{ width: "200px", height: "200px" }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage();
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="text-sm text-gray-600">Haga clic para subir una imagen</div>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="image-upload"
+                  onChange={handleImageUpload}
+                  ref={fileInputRef}
+                  className="hidden"
+                />
+              </div>
+
+              <div className="border rounded-lg p-4 bg-white">
+                <h3 className="font-medium text-sm text-gray-700 mb-3">Vista Previa</h3>
+                <div className="space-y-2">
+                  <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                    {imagePreview ? (
                       <img
                         src={imagePreview}
-                        alt="Vista previa del producto"
-                        className="mx-auto rounded-lg object-cover"
-                        style={{ width: "200px", height: "200px" }}
+                        alt="Vista previa"
+                        className="object-cover w-full h-full"
                       />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={removeImage}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="text-sm text-gray-600">Haga clic para subir una imagen</div>
-                    </>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => document.getElementById("image-upload")?.click()}
-                  >
-                    Subir Imagen
-                  </Button>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    id="image-upload"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </div>
-
-                <div className="border rounded-lg p-4 bg-white">
-                  <h3 className="font-medium text-sm text-gray-700 mb-3">Vista Previa</h3>
-                  <div className="space-y-2">
-                    <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                      {imagePreview ? (
-                        <img
-                          src={imagePreview}
-                          alt="Vista previa"
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="text-gray-400 text-xs text-center">Sin imagen</div>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="font-medium text-sm truncate">{formData.nombre || "Nombre del producto"}</h4>
-                      <p className="text-xs text-gray-600 truncate">
-                        {proveedorSeleccionado?.nombre || "Proveedor"}
-                      </p>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-bold text-green-600">${formData.precio || "0.00"}</span>
-                        <span className="text-xs text-gray-500">Stock: {formData.stock || "0"}</span>
-                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-xs text-center">Sin imagen</div>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-medium text-sm truncate">{formData.nombre || "Nombre del producto"}</h4>
+                    <p className="text-xs text-gray-600 truncate">
+                      {proveedorSeleccionado?.nombre || "Proveedor"}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-green-600">S/.{formData.precio || "0.00"}</span>
+                      <span className="text-xs text-gray-500">Stock: {formData.stock || "0"}</span>
                     </div>
                   </div>
                 </div>
-              </CardContent>
+              </div>
+            </CardContent>
             </Card>
           </div>
         </div>
