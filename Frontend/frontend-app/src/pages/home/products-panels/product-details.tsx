@@ -41,7 +41,7 @@ interface Product {
   nombre: string
   stock: number
   precio: number
-  tUnidad: string
+  tipo_unidad: { id: number; nombre: string } | null
   descripcion: string
   imagen: string | null
   proveedores: {
@@ -50,43 +50,39 @@ interface Product {
   }[]
 }
 
-const unitTypes = [
-  { value: "unidad", label: "Unidad" },
-  { value: "kg", label: "Kilogramo" },
-  { value: "litro", label: "Litro" },
-  { value: "metro", label: "Metro" },
-  { value: "caja", label: "Caja" },
-  { value: "paquete", label: "Paquete" },
-]
-
+interface TipoUnidad {
+  id: number
+  nombre: string
+}
 
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>()
-
-
   const [product, setProduct] = useState<Product | null>(null)
   const [editedProduct, setEditedProduct] = useState<Product | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [proveedoresList, setProveedoresList] = useState<{ id: number; nombre: string }[]>([])
-  
-      useEffect(() => {
-    const fetchProductAndProviders = async () => {
-        try {
-        const [productoRes, proveedoresRes] = await Promise.all([
-            axios.get(`http://localhost:8000/productos/${id}`),
-            axios.get("http://localhost:8000/proveedores"),
+  const [unidadList, setUnidadList] = useState<TipoUnidad[]>([])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productoRes, proveedoresRes, unidadRes] = await Promise.all([
+          axios.get(`http://localhost:8000/productos/${id}`),
+          axios.get("http://localhost:8000/proveedores/"),
+          axios.get("http://localhost:8000/tipo-unidad/"),
         ])
         setProduct(productoRes.data)
         setEditedProduct(productoRes.data)
         setProveedoresList(proveedoresRes.data)
-        } catch (error) {
+        setUnidadList(unidadRes.data)
+      } catch (error) {
         console.error("Error al cargar datos", error)
-        }
+      }
     }
-    fetchProductAndProviders()
-    }, [id])
+    fetchData()
+  }, [id])
 
   const handleEdit = () => setIsEditing(true)
 
@@ -97,69 +93,55 @@ export default function ProductDetails() {
     setPreviewImage(null)
   }
 
-  const handleInputChange = (field: keyof Product, value: string | number) => {
+  const handleInputChange = (field: keyof Product, value: any) => {
     if (!editedProduct) return
     setEditedProduct({ ...editedProduct, [field]: value })
   }
 
-const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0]
-  if (file) {
-    console.log("📸 Imagen seleccionada:", file.name, file.size, file.type)
-    setSelectedImageFile(file)
-    setPreviewImage(URL.createObjectURL(file))
-
-    event.target.value = ""
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setSelectedImageFile(file)
+      setPreviewImage(URL.createObjectURL(file))
+      event.target.value = ""
+    }
   }
-}
-
 
   const handleSave = async () => {
-  if (!editedProduct) return
+    if (!editedProduct) return
 
-  try {
-    const formData = new FormData()
-    formData.append("nombre", editedProduct.nombre)
-    formData.append("stock", editedProduct.stock.toString())
-    formData.append("precio", editedProduct.precio.toString())
-    formData.append("tUnidad", editedProduct.tUnidad)
-    formData.append("descripcion", editedProduct.descripcion)
+    try {
+      const formData = new FormData()
+      formData.append("nombre", editedProduct.nombre)
+      formData.append("stock", editedProduct.stock.toString())
+      formData.append("precio", editedProduct.precio.toString())
+      formData.append("descripcion", editedProduct.descripcion || "")
+      formData.append("tUnidad", editedProduct.tipo_unidad?.id.toString() || "")
 
-    if (editedProduct.proveedores?.[0]?.id) {
-      formData.append("proveedor_id", editedProduct.proveedores[0].id.toString())
-    }
-
-    if (selectedImageFile) {
-      formData.append("imagen", selectedImageFile)
-
-    } 
-
-    for (const [key, value] of formData.entries()) {
-      
-    }
-
-    await axios.put(
-      `http://localhost:8000/productos/${editedProduct.id}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      if (editedProduct.proveedores?.[0]?.id) {
+        formData.append("proveedor_id", editedProduct.proveedores[0].id.toString())
       }
-    )
 
-    const updated = await axios.get(`http://localhost:8000/productos/${id}`)
-    setProduct(updated.data)
-    setEditedProduct(updated.data)
-    setIsEditing(false)
-    setSelectedImageFile(null)
-    setPreviewImage(null)
-  } catch (error) {
-    console.error("❌ Error al guardar el producto", error)
+      if (selectedImageFile) {
+        formData.append("imagen", selectedImageFile)
+      }
+
+      await axios.put(
+        `http://localhost:8000/productos/${editedProduct.id}`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      )
+
+      const updated = await axios.get(`http://localhost:8000/productos/${id}`)
+      setProduct(updated.data)
+      setEditedProduct(updated.data)
+      setIsEditing(false)
+      setSelectedImageFile(null)
+      setPreviewImage(null)
+    } catch (error) {
+      console.error("❌ Error al guardar el producto", error)
+    }
   }
-}
-
-
 
   if (!product || !editedProduct) {
     return <div className="p-6 text-center">Cargando producto...</div>
@@ -193,14 +175,10 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Imagen */}
             <div className="space-y-4">
-              <Label className="font-medium">Imagen del Producto</Label>
+              <Label>Imagen del Producto</Label>
               <div className="relative group">
                 {imageSrc ? (
-                  <img
-                    src={imageSrc}
-                    alt={current.nombre}
-                    className="max-h-full max-w-full object-contain center mx-auto rounded-lg"
-                  />
+                  <img src={imageSrc} alt={current.nombre} className="max-h-full max-w-full object-contain center mx-auto rounded-lg" />
                 ) : (
                   <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
                     Sin imagen
@@ -215,94 +193,66 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
                   </div>
                 )}
               </div>
-
-              {/* Hidden input para subir imagen */}
               {isEditing && (
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setSelectedImageFile(file);
-                      setPreviewImage(URL.createObjectURL(file));
-                      
-                      e.target.value = "";
-                    }
-                  }}
-                />
+                <input id="image-upload" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               )}
             </div>
+
             {/* Datos del producto */}
             <div className="space-y-4">
               {/* Nombre */}
               <div className="space-y-2">
                 <Label>Nombre del Producto</Label>
                 {isEditing ? (
-                  <Input
-                    value={editedProduct.nombre}
-                    onChange={(e) => handleInputChange("nombre", e.target.value)}
-                  />
+                  <Input value={editedProduct.nombre} onChange={(e) => handleInputChange("nombre", e.target.value)} />
                 ) : (
                   <div className="p-3 bg-muted rounded-md">{product.nombre}</div>
                 )}
               </div>
 
               {/* Proveedor */}
-                <div className="space-y-2">
+              <div className="space-y-2">
                 <Label>Proveedor</Label>
                 {isEditing ? (
-                    <Popover>
+                  <Popover>
                     <PopoverTrigger asChild>
-                        <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between"
-                        >
+                      <Button variant="outline" role="combobox" className="w-full justify-between">
                         {editedProduct.proveedores?.[0]?.nombre || "Seleccionar proveedor"}
-                        </Button>
+                      </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0">
-                        <Command>
+                      <Command>
                         <CommandInput placeholder="Buscar proveedor..." />
                         <CommandEmpty>No se encontró proveedor</CommandEmpty>
                         <CommandGroup>
-                            {proveedoresList.map((proveedor) => (
+                          {proveedoresList.map((proveedor) => (
                             <CommandItem
-                                key={proveedor.id}
-                                value={proveedor.nombre}
-                                onSelect={() => {
+                              key={proveedor.id}
+                              value={proveedor.nombre}
+                              onSelect={() => {
                                 setEditedProduct((prev) =>
-                                    prev
+                                  prev
                                     ? {
                                         ...prev,
-                                        proveedores: [
-                                            {
-                                            id: proveedor.id,
-                                            nombre: proveedor.nombre,
-                                            },
-                                        ],
-                                        }
+                                        proveedores: [{ id: proveedor.id, nombre: proveedor.nombre }],
+                                      }
                                     : null
                                 )
-                                }}
+                              }}
                             >
-                                {proveedor.nombre}
+                              {proveedor.nombre}
                             </CommandItem>
-                            ))}
+                          ))}
                         </CommandGroup>
-                        </Command>
+                      </Command>
                     </PopoverContent>
-                    </Popover>
+                  </Popover>
                 ) : (
-                    <div className="p-3 bg-muted rounded-md">
+                  <div className="p-3 bg-muted rounded-md">
                     {product.proveedores?.[0]?.nombre || "Sin proveedor"}
-                    </div>
+                  </div>
                 )}
-                </div>
-
+              </div>
 
               {/* Stock y Precio */}
               <div className="grid grid-cols-2 gap-4 ">
@@ -318,7 +268,6 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
                     <div className="p-3 bg-muted rounded-md">{product.stock}</div>
                   )}
                 </div>
-
                 <div className="space-y-2">
                   <Label>Precio</Label>
                   {isEditing ? (
@@ -338,26 +287,31 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
               <div className="space-y-2">
                 <Label>Tipo de Unidad</Label>
                 {isEditing ? (
-                  <div className="w-full">
-                <Select
-                    value={editedProduct.tUnidad}
-                    onValueChange={(value) => handleInputChange("tUnidad", value)}
-                >
+                  <Select
+                    value={editedProduct.tipo_unidad?.id.toString()}
+                    onValueChange={(value) => {
+                      const selected = unidadList.find((u) => u.id === parseInt(value))
+                      if (selected) {
+                        setEditedProduct((prev) =>
+                          prev ? { ...prev, tipo_unidad: selected } : null
+                        )
+                      }
+                    }}
+                  >
                     <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar unidad" />
+                      <SelectValue placeholder="Seleccionar unidad" />
                     </SelectTrigger>
                     <SelectContent>
-                    {unitTypes.map((unit) => (
-                        <SelectItem key={unit.value} value={unit.value}>
-                        {unit.label}
+                      {unidadList.map((unidad) => (
+                        <SelectItem key={unidad.id} value={unidad.id.toString()}>
+                          {unidad.nombre}
                         </SelectItem>
-                    ))}
+                      ))}
                     </SelectContent>
-                </Select>
-                </div>
+                  </Select>
                 ) : (
                   <div className="p-3 bg-muted rounded-md">
-                    {unitTypes.find((u) => u.value === product.tUnidad)?.label}
+                    {product.tipo_unidad?.nombre || "Sin unidad"}
                   </div>
                 )}
               </div>
@@ -375,12 +329,9 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
                 onChange={(e) => handleInputChange("descripcion", e.target.value)}
               />
             ) : (
-              <div className="p-3 bg-muted rounded-md min-h-[100px]">
-                {product.descripcion}
-              </div>
+              <div className="p-3 bg-muted rounded-md min-h-[100px]">{product.descripcion}</div>
             )}
           </div>
-
           {/* Información adicional */}
           {!isEditing && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
@@ -388,19 +339,22 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
                 <div className="text-2xl font-bold text-primary">{product.stock}</div>
                 <div className="text-sm text-muted-foreground">Unidades en Stock</div>
               </div>
+
               <div className="text-center p-4 bg-muted/50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">S/.{product.precio.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  S/.{product.precio.toFixed(2)}
+                </div>
                 <div className="text-sm text-muted-foreground">
-                  Precio por {unitTypes.find((type) => type.value === product.tUnidad)?.label.toLowerCase()}
+                  Precio por {product.tipo_unidad?.nombre.toLowerCase() || "unidad"}
                 </div>
               </div>
+
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">#{product.id}</div>
                 <div className="text-sm text-muted-foreground">ID del Producto</div>
               </div>
             </div>
           )}
-
         </CardContent>
       </Card>
     </div>
