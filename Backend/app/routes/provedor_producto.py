@@ -1,3 +1,4 @@
+from ast import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session, joinedload
 from ..database import SessionLocal
@@ -8,7 +9,10 @@ from ..schemas.producto_schema import ProductOut, ProductCreate, ProductoSchema
 from datetime import datetime
 from pathlib import Path
 import uuid
-import os
+from ..models.tUnidad import TipoUnidad
+from ..schemas.tUnidad_schema import TUnidadCreate, TUnidadOut
+from sqlalchemy.orm import joinedload
+from typing import List
 
 router = APIRouter()
 
@@ -19,24 +23,25 @@ def get_db():
     finally:
         db.close()
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 IMAGES_DIR = BASE_DIR / "images"
 IMAGES_DIR.mkdir(exist_ok=True)
 
-
 #################################PRODUCTOS#################################
 
-@router.get("/productos/", response_model=list[ProductOut])
-def read_productos(db: Session = Depends(get_db)):
-    productos = db.query(Producto).options(joinedload(Producto.proveedores)).all()
+@router.get("/productos/", response_model=List[ProductOut])
+def get_productos(db: Session = Depends(get_db)):
+    productos = db.query(Producto).options(
+        joinedload(Producto.tipo_unidad),
+        joinedload(Producto.proveedores)
+    ).all()
     return productos
 
 @router.get("/productos/{producto_id}", response_model=ProductOut)
 def get_producto(producto_id: int, db: Session = Depends(get_db)):
     producto = (
         db.query(Producto)
-        .options(joinedload(Producto.proveedores))
+        .options(joinedload(Producto.tipo_unidad), joinedload(Producto.proveedores))
         .filter(Producto.id == producto_id)
         .first()
     )
@@ -50,7 +55,7 @@ async def create_producto(
     descripcion: str = Form(None),
     precio: float = Form(None),
     stock: int = Form(None),
-    tUnidad: str = Form(None),
+    tUnidad: int = Form(None), 
     proveedor_id: int = Form(None),
     imagen: UploadFile = File(None),
     db: Session = Depends(get_db)
@@ -60,8 +65,9 @@ async def create_producto(
         "descripcion": descripcion,
         "precio": precio,
         "stock": stock,
-        "tUnidad": tUnidad
+        "tUnidad": tUnidad  
     }
+
     if imagen and imagen.filename:
         if not imagen.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
@@ -74,7 +80,6 @@ async def create_producto(
             contents = await imagen.read()
             with open(file_path, "wb") as f:
                 f.write(contents)
-            
             producto_data["imagen"] = f"/images/{unique_filename}"
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error al guardar la imagen: {e}")
@@ -92,6 +97,7 @@ async def create_producto(
     db.refresh(db_producto)
     return db_producto
 
+
 @router.put("/productos/{producto_id}", response_model=ProductOut)
 async def update_producto(
     producto_id: int,
@@ -99,7 +105,7 @@ async def update_producto(
     descripcion: str = Form(None),
     precio: float = Form(None),
     stock: int = Form(None),
-    tUnidad: str = Form(None),
+    tUnidad: int = Form(None), 
     proveedor_id: int = Form(None),
     imagen: UploadFile = File(None),
     db: Session = Depends(get_db)
@@ -140,7 +146,23 @@ async def update_producto(
     db.refresh(producto)
     return producto
 
+#################################TIPO UNIDAD#################################
+
+@router.get("/tipo-unidad/", response_model=list[TUnidadOut])
+def get_unidades(db: Session = Depends(get_db)):
+    return db.query(TipoUnidad).all()
+
+
+@router.post("/tipo-unidad/")
+def crear_tipo_unidad(unidad: TUnidadCreate, db: Session = Depends(get_db)):
+    nueva_unidad = TipoUnidad(nombre=unidad.nombre)
+    db.add(nueva_unidad)
+    db.commit()
+    db.refresh(nueva_unidad)
+    return nueva_unidad
+
 #################################PROVEEDORES#################################
+
 @router.get("/proveedores/", response_model=list[ProveedorOut])
 def read_proveedores(db: Session = Depends(get_db)):
     return db.query(Proveedor).all()

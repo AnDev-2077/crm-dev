@@ -8,7 +8,7 @@ import type {
   SortingState,
   VisibilityState,
 } from "@tanstack/react-table"
-
+import { ProveedorFormDialog } from "./providers-panels/add-providers"
 import {
   flexRender,
   getCoreRowModel,
@@ -20,7 +20,7 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -49,28 +49,7 @@ export type Provider = {
 }
 
 export const columns: ColumnDef<Provider>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
+
   {
     accessorKey: "id",
     header: "ID",
@@ -155,6 +134,8 @@ export default function DataTableDemo() {
   const [providers, setProviders] = React.useState<Provider[]>([])
   const [loading, setLoading] = React.useState(true)
 
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -162,6 +143,11 @@ export default function DataTableDemo() {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
+  
+  const handleProveedorCreado = (nuevo: Provider) => {
+    setProviders((prev) => [...prev, nuevo])
+  }
+
 
   React.useEffect(() => {
     const fetchProviders = async () => {
@@ -208,17 +194,19 @@ export default function DataTableDemo() {
   if (loading) return <div className="p-4">Cargando proveedores...</div>
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Buscar por nombre o teléfono..."
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
+   <div className="w-full">
+    <div className="flex items-center py-4">
+      <Input
+        placeholder="Buscar por nombre o teléfono..."
+        value={globalFilter}
+        onChange={(e) => setGlobalFilter(e.target.value)}
+        className="max-w-sm"
+      />
+
+      <div className="ml-auto flex items-center gap-x-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
+            <Button variant="outline">
               Columnas <ChevronDown />
             </Button>
           </DropdownMenuTrigger>
@@ -231,14 +219,27 @@ export default function DataTableDemo() {
                   key={column.id}
                   className="capitalize"
                   checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  onCheckedChange={(value) =>
+                    column.toggleVisibility(!!value)
+                  }
                 >
                   {column.id}
                 </DropdownMenuCheckboxItem>
               ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <Button onClick={() => setDialogOpen(true)}>+ Nuevo proveedor</Button>
       </div>
+    </div>
+
+      <ProveedorFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onProveedorCreado={handleProveedorCreado}
+      />
+
+
 
       <div className="rounded-md border">
         <Table>

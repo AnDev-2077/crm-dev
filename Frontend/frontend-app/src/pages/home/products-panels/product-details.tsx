@@ -131,14 +131,11 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
 
     if (selectedImageFile) {
       formData.append("imagen", selectedImageFile)
-      console.log("✅ Imagen incluida en FormData:", selectedImageFile.name)
-    } else {
-      console.log("⚠️ No se seleccionó nueva imagen")
-    }
 
-    // 👇 Inspecciona el contenido de formData
+    } 
+
     for (const [key, value] of formData.entries()) {
-      console.log(`📦 FormData -> ${key}:`, value)
+      
     }
 
     await axios.put(
@@ -196,50 +193,48 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Imagen */}
             <div className="space-y-4">
-  <Label className="font-medium">Imagen del Producto</Label>
-  <div className="relative group">
-    {imageSrc ? (
-      <img
-        src={imageSrc}
-        alt={current.nombre}
-        className="w-full h-64 object-cover rounded-lg border"
-      />
-    ) : (
-      <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
-        Sin imagen
-      </div>
-    )}
-    {isEditing && (
-      <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-        <label htmlFor="image-upload" className="text-white cursor-pointer text-center">
-          <Upload className="h-6 w-6 mx-auto mb-1" />
-          Cambiar imagen
-        </label>
-      </div>
-    )}
-  </div>
+              <Label className="font-medium">Imagen del Producto</Label>
+              <div className="relative group">
+                {imageSrc ? (
+                  <img
+                    src={imageSrc}
+                    alt={current.nombre}
+                    className="max-h-full max-w-full object-contain center mx-auto rounded-lg"
+                  />
+                ) : (
+                  <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
+                    Sin imagen
+                  </div>
+                )}
+                {isEditing && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    <label htmlFor="image-upload" className="text-white cursor-pointer text-center">
+                      <Upload className="h-6 w-6 mx-auto mb-1" />
+                      Cambiar imagen
+                    </label>
+                  </div>
+                )}
+              </div>
 
-  {/* Hidden input para subir imagen */}
-  {isEditing && (
-    <input
-      id="image-upload"
-      type="file"
-      accept="image/*"
-      className="hidden"
-      onChange={(e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-          setSelectedImageFile(file);
-          setPreviewImage(URL.createObjectURL(file));
-          // Resetear el valor del input para que pueda subir la misma imagen si la cambia otra vez
-          e.target.value = "";
-        }
-      }}
-    />
-  )}
-</div>
-
-
+              {/* Hidden input para subir imagen */}
+              {isEditing && (
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedImageFile(file);
+                      setPreviewImage(URL.createObjectURL(file));
+                      
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              )}
+            </div>
             {/* Datos del producto */}
             <div className="space-y-4">
               {/* Nombre */}

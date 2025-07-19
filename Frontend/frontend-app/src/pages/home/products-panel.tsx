@@ -2,12 +2,8 @@
 
 import * as React from "react"
 import axios from "axios"
-import type {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-} from "@tanstack/react-table"
+import { useNavigate } from "react-router-dom"
+import { Plus } from "lucide-react"
 
 import {
   flexRender,
@@ -17,8 +13,25 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
+import type {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+} from "@tanstack/react-table"
+
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
 import {
@@ -29,17 +42,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-
-import { useNavigate } from "react-router-dom";
 
 export type Productos = {
   id: number
@@ -47,125 +49,115 @@ export type Productos = {
   descripcion: string
   precio: number
   stock: number
-  tUnidad: string
+  tipo_unidad: { id: number; nombre: string } | null
   fechaIngreso: string
+  proveedores?: {
+    nombre: string
+  }
 }
 
-
 export default function DataTableDemo() {
-
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   const [productos, setProductos] = React.useState<Productos[]>([])
   const [loading, setLoading] = React.useState(true)
 
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
 
-  
-const columns: ColumnDef<Productos>[] = [
-  {
-    accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <div>{row.getValue("id")}</div>,
-  },
-  {
-    accessorKey: "nombre",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Nombre
-        <ArrowUpDown />
-      </Button>
-    ),
-    cell: ({ row }) => <div>{row.getValue("nombre")}</div>,
-  },
-  {
-    accessorKey: "descripcion",
-    header: "Descripción",
-    cell: ({ row }) => (
-      <div className="lowercase">{row.getValue("descripcion")}</div>
-    ),
-  },
-  {
-    accessorKey: "precio",
-    header: "Precio",
-    cell: ({ row }) => <div>S/. {row.getValue("precio")}</div>,
-  },
-  {
-    accessorKey: "stock",
-    header: "Stock",
-    cell: ({ row }) => <div>{row.getValue("stock")}</div>,
-  },
-  {
-    accessorKey: "tUnidad",
-    header: "Tipo de Unidad",
-    cell: ({ row }) => <div>{row.getValue("tUnidad")}</div>,
-  },
-  {
-  accessorKey: "proveedores",
-  header: "Proveedor",
-  cell: ({ row }) => {
-    const proveedores = row.getValue("proveedores") as Productos[]
-    if (!proveedores || proveedores.length === 0) return <div>—</div>
-    return <div>{proveedores.map(p => p.nombre).join(", ")}</div>
-  },
-  },
-  {
-    accessorKey: "fechaIngreso",
-    header: "Fecha de Ingreso",
-    cell: ({ row }) => {
-      const rawDate = row.getValue("fechaIngreso")
 
-      if (!rawDate || typeof rawDate !== "string" || isNaN(Date.parse(rawDate))) {
-        return <div>—</div> 
-      }
-
-      const formatted = new Date(rawDate).toLocaleDateString("es-ES", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-
-      return <div>{formatted}</div>
+  const columns: ColumnDef<Productos>[] = [
+    {
+      accessorKey: "id",
+      header: "ID",
+      cell: ({ row }) => <div>{row.getValue("id")}</div>,
     },
-  },
-  
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const products = row.original
-      const productId = products.id.toString()
-
-            // AGREGAR EDITAR PRODUCTO Y ELIMINAR PRODUCTO
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-
-            <DropdownMenuItem onClick={() => navigate(`/home/products-panels/${productId}`)}>
-            Ver producto
-          </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
+    {
+      accessorKey: "nombre",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Nombre
+          <ArrowUpDown />
+        </Button>
+      ),
+      cell: ({ row }) => <div>{row.getValue("nombre")}</div>,
     },
-  },
-]
+    {
+      accessorKey: "descripcion",
+      header: "Descripción",
+      cell: ({ row }) => <div className="lowercase">{row.getValue("descripcion")}</div>,
+    },
+    {
+      accessorKey: "precio",
+      header: "Precio",
+      cell: ({ row }) => <div>S/. {row.getValue("precio")}</div>,
+    },
+    {
+      accessorKey: "stock",
+      header: "Stock",
+      cell: ({ row }) => <div>{row.getValue("stock")}</div>,
+    },
+    {
+      accessorKey: "tipo_unidad",
+      header: "Tipo de Unidad",
+      cell: ({ row }) => {
+        const unidad = row.getValue("tipo_unidad") as { nombre: string } | null
+        return <div>{unidad?.nombre ?? "—"}</div>
+      },
+    },
+    {
+      accessorKey: "proveedores",
+      header: "Proveedor",
+      cell: ({ row }) => {
+        const proveedores = row.getValue("proveedores") as { nombre: string }[] | undefined
+        const nombres = proveedores?.map((p) => p.nombre).join(", ")
+        return <div>{nombres || "—"}</div>
+      },
+    },
+    {
+      accessorKey: "fechaIngreso",
+      header: "Fecha de Ingreso",
+      cell: ({ row }) => {
+        const rawDate = row.getValue("fechaIngreso") as string
+        if (!rawDate || isNaN(Date.parse(rawDate))) return <div>—</div>
+        const formatted = new Date(rawDate).toLocaleDateString("es-ES", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+        return <div>{formatted}</div>
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const productId = row.original.id.toString()
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate(`/home/products-panels/${productId}`)}>
+                Ver producto
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
 
   React.useEffect(() => {
     const fetchProducts = async () => {
@@ -201,22 +193,22 @@ const columns: ColumnDef<Productos>[] = [
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn:  (row, _, filterValue) => {
-  const nombre = row.original.nombre?.toLowerCase() ?? ""
-  const descripcion = row.original.descripcion?.toLowerCase() ?? ""
-  const term = filterValue.toLowerCase()
-  return nombre.includes(term) || descripcion.includes(term)
-}
-
+    globalFilterFn: (row, _, filterValue) => {
+      const nombre = row.original.nombre?.toLowerCase() ?? ""
+      const descripcion = row.original.descripcion?.toLowerCase() ?? ""
+      const term = filterValue.toLowerCase()
+      return nombre.includes(term) || descripcion.includes(term)
+    },
   })
 
   if (loading) return <div className="p-4">Cargando productos...</div>
 
   return (
     <div className="w-full">
+
       <div className="flex items-center py-4">
         <Input
-          placeholder="Buscar producto por nombre ..."
+          placeholder="Buscar producto por nombre..."
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-sm"
@@ -243,13 +235,16 @@ const columns: ColumnDef<Productos>[] = [
               ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
         <Button
-          variant="outline"
+          variant="default" // estilo negro por defecto
           className="ml-2"
           onClick={() => navigate(`/home/products-panels`)}
         >
+          <Plus className="mr-2 h-4 w-4" />
           Agregar Producto
         </Button>
+
       </div>
 
       <div className="rounded-md border">
@@ -259,12 +254,7 @@ const columns: ColumnDef<Productos>[] = [
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -273,16 +263,10 @@ const columns: ColumnDef<Productos>[] = [
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -304,20 +288,10 @@ const columns: ColumnDef<Productos>[] = [
           {table.getFilteredRowModel().rows.length} seleccionados.
         </div>
         <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
+          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
             Anterior
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
+          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
             Siguiente
           </Button>
         </div>

@@ -1,7 +1,8 @@
 "use client"
+import * as React from "react"
 
-import type React from "react"
 import { useState } from "react"
+import { useEffect } from "react"
 import axios from "axios"
 import { Upload, X } from "lucide-react"
 import { toast } from "sonner"
@@ -14,14 +15,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ProveedorCombobox } from "@/components/customice-combobox"
 
-const unitTypes = [
-  { value: "unidad", label: "Unidad" },
-  { value: "kg", label: "Kilogramo" },
-  { value: "litro", label: "Litro" },
-  { value: "metro", label: "Metro" },
-  { value: "caja", label: "Caja" },
-  { value: "paquete", label: "Paquete" },
-]
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+
+import { Toaster } from "sonner"
+import type { ToasterProps } from "sonner"
+
 
 type Proveedor = {
   id: number
@@ -32,12 +37,20 @@ type Proveedor = {
   documento: string
   tipoDocumento: string
 }
-
+type tUnidad = {
+  id: number
+  nombre: string
+}
 export default function AddProductForm() {
+  const [unitTypes, setUnitTypes] = useState<tUnidad[]>([])
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<Proveedor | null>(null)
   const [productImage, setProductImage] = useState<File | null>(null) 
   const [imagePreview, setImagePreview] = useState<string | null>(null)   
-const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [nombreUnidad, setNombreUnidad] = useState("")
+  const [loadingUnidad, setLoadingUnidad] = useState(false)
+  const [openDialog, setOpenDialog] = useState(false)
+
   const [formData, setFormData] = useState({
     nombre: "",
     stock: "",
@@ -47,6 +60,44 @@ const fileInputRef = useRef<HTMLInputElement | null>(null);
   })
 
   const API_URL = import.meta.env.VITE_API_URL
+
+  const fetchUnitTypes = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/tipo-unidad/`)
+      setUnitTypes(response.data)
+    } catch (error) {
+      console.error("Error al cargar tipos de unidad:", error)
+      toast.error("Error al cargar unidades")
+    }
+  }
+
+  useEffect(() => {
+    fetchUnitTypes()
+  }, [API_URL])
+
+  const handleAgregarUnidad = async () => {
+    if (!nombreUnidad.trim()) {
+      toast.error("El nombre no puede estar vacío.")
+      return
+    }
+
+    try {
+      setLoadingUnidad(true)
+      await axios.post("http://127.0.0.1:8000/tipo-unidad/", {
+        nombre: nombreUnidad,
+      })
+      toast.success("Unidad registrada correctamente.")
+      setNombreUnidad("")
+      await fetchUnitTypes()
+      setOpenDialog(false)
+    } catch (error) {
+      console.error("Error al registrar tipo de unidad:", error)
+      toast.error("No se pudo registrar la unidad.")
+    } finally {
+      setLoadingUnidad(false)
+    }
+  }
+
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -100,7 +151,7 @@ const fileInputRef = useRef<HTMLInputElement | null>(null);
     }
 
     try {
-      await axios.post(`${API_URL}/productos`, formDataToSend, {
+      await axios.post(`${API_URL}/productos/`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -127,6 +178,7 @@ const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <Toaster /> {}
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Agregar Producto</h1>
@@ -196,22 +248,54 @@ const fileInputRef = useRef<HTMLInputElement | null>(null);
 
                 <div className="space-y-2">
                   <Label>Tipo de Unidad *</Label>
-                  <Select
-                    value={formData.tUnidad}
-                    onValueChange={(value) => handleInputChange("tUnidad", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione el tipo de unidad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {unitTypes.map((unit) => (
-                        <SelectItem key={unit.value} value={unit.value}>
-                          {unit.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-end gap-2">
+                    <Select
+                      value={formData.tUnidad}
+                      onValueChange={(value) => handleInputChange("tUnidad", value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Seleccione el tipo de unidad" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unitTypes.map((unidad) => (
+                          <SelectItem key={unidad.id} value={unidad.id.toString()}>
+                            {unidad.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="outline">
+                          +
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Agregar Tipo de Unidad</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-4">
+                            <Label htmlFor="nombre-unidad">Nombre</Label>
+                            <Input
+                              id="nombre-unidad"
+                              value={nombreUnidad}
+                              onChange={(e) => setNombreUnidad(e.target.value)}
+                              placeholder="Escriba el tipo de unidad"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button onClick={handleAgregarUnidad} disabled={loadingUnidad}>
+                            {loadingUnidad ? "Guardando..." : "Guardar"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="descripcion">Descripción</Label>
@@ -286,7 +370,7 @@ const fileInputRef = useRef<HTMLInputElement | null>(null);
                       <img
                         src={imagePreview}
                         alt="Vista previa"
-                        className="object-cover w-full h-full"
+                        className="max-h-full max-w-full object-contain"
                       />
                     ) : (
                       <div className="text-gray-400 text-xs text-center">Sin imagen</div>
@@ -310,10 +394,12 @@ const fileInputRef = useRef<HTMLInputElement | null>(null);
         </div>
 
         <div className="flex justify-end space-x-4 mt-6">
-          <Button type="button" variant="outline">
-            Cancelar
+          <Button type="button" variant="outline" >
+            <a href="/home/products-panel">Volver</a>
           </Button>
-          <Button type="submit">Guardar Producto</Button>
+          <Button type="submit" >
+            Guardar Producto
+            </Button>
         </div>
       </form>
     </div>
