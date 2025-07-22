@@ -13,6 +13,9 @@ from ..models.tUnidad import TipoUnidad
 from ..schemas.tUnidad_schema import TUnidadCreate, TUnidadOut
 from sqlalchemy.orm import joinedload
 from typing import List
+from ..schemas.compra_schema import CompraCreate
+
+
 
 router = APIRouter()
 
@@ -146,6 +149,17 @@ async def update_producto(
     db.refresh(producto)
     return producto
 
+@router.get("/productos/proveedor/{proveedor_id}", response_model=List[ProductOut])
+def get_productos_por_proveedor(proveedor_id: int, db: Session = Depends(get_db)):
+    productos = (
+        db.query(Producto)
+        .options(joinedload(Producto.tipo_unidad), joinedload(Producto.proveedores))
+        .join(Producto.proveedores)
+        .filter(Proveedor.id == proveedor_id)
+        .all()
+    )
+    return productos
+
 #################################TIPO UNIDAD#################################
 
 @router.get("/tipo-unidad/", response_model=list[TUnidadOut])
@@ -174,3 +188,31 @@ def create_proveedor(proveedor: ProveedorCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_proveedor)
     return db_proveedor
+
+###############################COMPRAS#########################################
+
+@router.post("/compras/")
+def registrar_compra(compra: CompraCreate, db: Session = Depends(get_db)):
+    nueva_compra = Compra(proveedor_id=compra.proveedor_id)
+    db.add(nueva_compra)
+    db.flush()  # Necesario para obtener el ID antes de commit
+
+    for item in compra.productos:
+        producto_existente = db.query(Producto).filter(Producto.id == item.producto_id).first()
+        if not producto_existente:
+            raise HTTPException(status_code=404, detail=f"Producto con ID {item.producto_id} no encontrado")
+
+        detalle = DetalleCompra(
+            compra_id=nueva_compra.id,
+            producto_id=item.producto_id,
+            cantidad=item.cantidad,
+            precio_unitario=item.precio_unitario
+        )
+        db.add(detalle)
+
+        # Opcional: actualizar el stock del producto
+        producto_existente.stock += item.cantidad
+
+    db.commit()
+    db.refresh(nueva_compra)
+    return {"message": "Compra registrada correctamente", "id": nueva_compra.id}
