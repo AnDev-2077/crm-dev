@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
-import BoletaExport from "./boletaExport";
+
 // Estilos
 const styles = StyleSheet.create({
   page: {
@@ -25,9 +25,10 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: "bold",
   },
-  line: {
-    borderBottom: "1px solid #000",
+  separator: {
     marginVertical: 5,
+    height: 1,
+    backgroundColor: "#000",
   },
   productRow: {
     flexDirection: "row",

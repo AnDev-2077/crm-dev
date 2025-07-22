@@ -54,7 +54,8 @@ export default function SupplierProductManager() {
   const [availableProducts, setAvailableProducts] = useState<Product[]>([])
   const [unidades, setUnidades] = useState<Unidad[]>([])
   const [searchNombre, setSearchNombre] = useState("");
-const [searchStock, setSearchStock] = useState("");
+  const [searchStock, setSearchStock] = useState("");
+  const [numeroOrden, setNumeroOrden] = useState<string | null>(null);
 
   const fetchTipoUnidades = async (): Promise<TipoUnidad[]> => {
   try {
@@ -69,8 +70,20 @@ const [searchStock, setSearchStock] = useState("");
 const [supplierProducts, setSupplierProducts] = useState<Product[]>([])
 
 
-  // Cargar proveedores al inicio
-  useEffect(() => {
+useEffect(() => {
+  const fetchNumeroOrden = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/compras/siguiente-numero`);
+      setNumeroOrden(response.data.numero_orden);
+    } catch (error) {
+      console.error("Error al obtener el número de orden:", error);
+    }
+  };
+
+  fetchNumeroOrden();
+}, [selectedSupplier]);
+
+useEffect(() => {
     const loadSuppliers = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/proveedores/`)
@@ -201,7 +214,7 @@ const handleGuardarCompra = async () => {
     const compraPayload = {
       proveedor_id: Number(selectedSupplier),
       productos: completeProducts.map((p) => ({
-        producto_id: Number(p.nombre), // este es el id del producto
+        producto_id: Number(p.nombre), 
         cantidad: Number(p.stock),
         precio_unitario: Number(p.precio),
       })),
@@ -209,8 +222,8 @@ const handleGuardarCompra = async () => {
 
     await axios.post(`${import.meta.env.VITE_API_URL}/compras/`, compraPayload);
 
-    alert("Compra guardada exitosamente");
-    // Aquí puedes resetear el formulario si deseas
+    setSelectedSupplier("");
+    
   } catch (error) {
     console.error("Error al guardar la compra", error);
     alert("Hubo un error al guardar la compra.");
@@ -296,46 +309,48 @@ const handleGuardarCompra = async () => {
                                 value={`product-${product.id}`}
                                 className="border rounded-lg"
                               >
-                                <AccordionTrigger className="px-4 hover:no-underline">
-                                  <div className="flex items-center justify-between w-full mr-4">
-                                    <div className="flex items-center gap-3">
-                                      <span className="font-medium">
-                                        {product.nombre
-                                          ? availableProducts.find((p: Product) => p.id === product.nombre)?.nombre || "Producto sin nombre"
-                                          : "Selecciona un producto"}
-                                      </span>
+                                <div className="flex items-center justify-between w-full mr-4 px-4">
+                              <AccordionTrigger className="flex-1 text-left hover:no-underline">
+                                <div className="flex items-center gap-3">
+                                  <span className="font-medium">
+                                    {product.nombre
+                                      ? availableProducts.find((p: Product) => p.id === product.nombre)?.nombre || "Producto sin nombre"
+                                      : "Selecciona un producto"}
+                                  </span>
 
-                                      {isProductComplete(product) && (
-                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                          Completo
-                                        </span>
-                                      )}
-                                      {!isProductComplete(product) && product.nombre && (
-                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                                          Incompleto
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {product.precio && (
-                                        <span className="text-sm text-gray-600 font-medium">S/. {product.precio}</span>
-                                      )}
-                                      {products.length > 1 && (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            removeProduct(product.id)
-                                          }}
-                                          className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                </AccordionTrigger>
+                                  {isProductComplete(product) && (
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                      Completo
+                                    </span>
+                                  )}
+                                  {!isProductComplete(product) && product.nombre && (
+                                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                                      Incompleto
+                                    </span>
+                                  )}
+                                </div>
+                              </AccordionTrigger>
+
+                              <div className="flex items-center gap-2">
+                                {product.precio && (
+                                  <span className="text-sm text-gray-600 font-medium">S/. {product.precio}</span>
+                                )}
+                                {products.length > 1 && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      removeProduct(product.id)
+                                    }}
+                                    className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                                </div>
+                              </div>
                                 <AccordionContent className="px-4 pb-4">
                                 <div className="space-y-4">
                                   <div className="grid md:grid-cols-2 gap-4">
@@ -451,7 +466,8 @@ const handleGuardarCompra = async () => {
                       {/* Encabezado del documento */}
                       <div className="text-center border-b pb-4">
                         <h2 className="text-lg font-bold">ORDEN DE COMPRA</h2>
-                        <p className="text-sm text-gray-600">#{Date.now().toString().slice(-6)}</p>
+                        <p className="text-sm text-gray-600">#{numeroOrden || "Cargando..."}</p>
+
                         <p className="text-xs text-gray-500">{new Date().toLocaleDateString()}</p>
                       </div>
 

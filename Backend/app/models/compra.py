@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, func, DECIMAL
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, func, DECIMAL, String
 from sqlalchemy.orm import relationship
 from ..database import Base
 
@@ -8,6 +8,8 @@ class Compra(Base):
     proveedor_id = Column(Integer, ForeignKey("proveedores.id"), nullable=False)
     fecha = Column(DateTime, default=func.now())
     detalles = relationship("DetalleCompra", back_populates="compra", cascade="all, delete-orphan")
+    orden_compra = Column(String(20), unique=True, nullable=False)
+
 
 class DetalleCompra(Base):
     __tablename__ = "detalle_compra"

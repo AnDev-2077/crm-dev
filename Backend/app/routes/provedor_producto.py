@@ -14,8 +14,9 @@ from ..schemas.tUnidad_schema import TUnidadCreate, TUnidadOut
 from sqlalchemy.orm import joinedload
 from typing import List
 from ..schemas.compra_schema import CompraCreate
-
-
+from ..models.compra import Compra
+from ..models.compra import DetalleCompra
+from sqlalchemy import func
 
 router = APIRouter()
 
@@ -192,27 +193,56 @@ def create_proveedor(proveedor: ProveedorCreate, db: Session = Depends(get_db)):
 ###############################COMPRAS#########################################
 
 @router.post("/compras/")
-def registrar_compra(compra: CompraCreate, db: Session = Depends(get_db)):
-    nueva_compra = Compra(proveedor_id=compra.proveedor_id)
+def crear_compra(compra: CompraCreate, db: Session = Depends(get_db)):
+
+    # Generar orden de compra
+    ultimo_orden = db.query(func.max(Compra.orden_compra)).scalar()
+    if ultimo_orden and ultimo_orden.isdigit():
+        nuevo_numero = int(ultimo_orden) + 1
+    else:
+        nuevo_numero = 1
+    orden_formateada = f"{nuevo_numero:07d}"
+
+    # Calcular total dinámicamente
+    total_calculado = sum(item.cantidad * item.precio_unitario for item in compra.productos)
+
+    nueva_compra = Compra(
+        proveedor_id=compra.proveedor_id,
+        orden_compra=orden_formateada,
+        fecha=datetime.now(),
+    )
+
     db.add(nueva_compra)
-    db.flush()  # Necesario para obtener el ID antes de commit
+    db.flush()  # Para obtener el ID de la compra antes de crear los detalles
 
     for item in compra.productos:
-        producto_existente = db.query(Producto).filter(Producto.id == item.producto_id).first()
-        if not producto_existente:
-            raise HTTPException(status_code=404, detail=f"Producto con ID {item.producto_id} no encontrado")
+        producto = db.query(Producto).filter(Producto.id == item.producto_id).first()
+        if not producto:
+            raise HTTPException(status_code=404, detail=f"Producto ID {item.producto_id} no encontrado")
 
         detalle = DetalleCompra(
             compra_id=nueva_compra.id,
             producto_id=item.producto_id,
             cantidad=item.cantidad,
-            precio_unitario=item.precio_unitario
+            precio_unitario=item.precio_unitario,
         )
         db.add(detalle)
 
-        # Opcional: actualizar el stock del producto
-        producto_existente.stock += item.cantidad
+        # Aumentar stock
+        producto.stock += item.cantidad
 
     db.commit()
     db.refresh(nueva_compra)
-    return {"message": "Compra registrada correctamente", "id": nueva_compra.id}
+
+    return {
+        "message": "Compra registrada correctamente",
+        "orden_compra": nueva_compra.orden_compra,
+        "id": nueva_compra.id,
+        "total": total_calculado
+    }
+
+@router.get("/compras/siguiente-numero")
+def obtener_siguiente_numero(db: Session = Depends(get_db)):
+    ultima_compra = db.query(Compra).order_by(Compra.id.desc()).first()
+    numero = ultima_compra.id + 1 if ultima_compra else 1
+    return {"numero_orden": f"{numero:07d}"}
