@@ -1,5 +1,4 @@
-```sq
--- Tabla de proveedores
+```sql
 CREATE TABLE proveedores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -11,7 +10,6 @@ CREATE TABLE proveedores (
     tipoDocumento VARCHAR(50) NOT NULL DEFAULT 'RUC'
 );
 
--- Tabla de productos
 CREATE TABLE productos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -25,13 +23,11 @@ CREATE TABLE productos (
     FOREIGN KEY (tUnidad) REFERENCES tUnidad(id)
 );
 
--- Tabla tipo de unidad
 CREATE TABLE tUnidad (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL
 );
 
--- Tabla intermedia para la relación muchos a muchos entre proveedores y productos
 CREATE TABLE proveedor_producto (
     id INT AUTO_INCREMENT PRIMARY KEY,
     proveedor_id INT NOT NULL,
@@ -40,7 +36,6 @@ CREATE TABLE proveedor_producto (
     FOREIGN KEY (producto_id) REFERENCES productos(id)
 );
 
--- Tabla de clientes
 CREATE TABLE clientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -52,7 +47,6 @@ CREATE TABLE clientes (
     tipoDocumento VARCHAR(50) NOT NULL DEFAULT 'RUC'
 );
 
--- Tabla de trabajadores
 CREATE TABLE trabajadores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -61,7 +55,6 @@ CREATE TABLE trabajadores (
     is_active TINYINT(1) DEFAULT 1
 );
 
--- Tabla de compras
 CREATE TABLE compras (
     id INT AUTO_INCREMENT PRIMARY KEY,
     proveedor_id INT NOT NULL,
@@ -69,7 +62,6 @@ CREATE TABLE compras (
     FOREIGN KEY (proveedor_id) REFERENCES proveedores(id)
 );
 
--- Tabla de detalle de compras
 CREATE TABLE detalle_compra (
     id INT AUTO_INCREMENT PRIMARY KEY,
     compra_id INT NOT NULL,
