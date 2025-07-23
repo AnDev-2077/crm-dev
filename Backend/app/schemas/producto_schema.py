@@ -7,7 +7,8 @@ from .tUnidad_schema import TUnidadOut
 class ProductoSchema(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
-    precio: Optional[float] = None
+    precio_compra: Optional[float] = None
+    precio_venta: Optional[float] = None
     stock: Optional[int] = None
     imagen: Optional[str] = None
 

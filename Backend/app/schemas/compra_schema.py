@@ -1,4 +1,3 @@
-# schemas/compra_schema.py
 from pydantic import BaseModel
 from typing import List
 

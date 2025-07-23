@@ -1,4 +1,4 @@
-// components/ProveedorFormDialog.tsx
+// components/ClienteFormDialog.tsx
 import React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,7 @@ import {
 import axios from "axios"
 import { toast } from "sonner"
 
-type Proveedor = {
+type Cliente = {
   id: number
   nombre: string
   correo: string
@@ -27,18 +27,18 @@ type Proveedor = {
 interface Props {
   open: boolean
   onOpenChange: (val: boolean) => void
-  onProveedorCreado?: (nuevo: Proveedor) => void
+  onClienteCreado?: (nuevo: Cliente) => void
 }
 
-export function ProveedorFormDialog({ open, onOpenChange, onProveedorCreado }: Props) {
+export function ClienteFormDialog({ open, onOpenChange, onClienteCreado }: Props) {
   const API_URL = import.meta.env.VITE_API_URL
-  const [formData, setFormData] = React.useState<Proveedor>({
+  const [formData, setFormData] = React.useState<Cliente>({
     nombre: "",
     correo: "",
     telefono: "",
     direccion: "",
     documento: "",
-    tipoDocumento: "RUC",
+    tipoDocumento: "DNI",
     id: 0,
   })
 
@@ -50,12 +50,12 @@ export function ProveedorFormDialog({ open, onOpenChange, onProveedorCreado }: P
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await axios.post(`${API_URL}/proveedores`, formData)
-      toast.success("Proveedor registrado")
-      onProveedorCreado?.(res.data)
+      const res = await axios.post(`${API_URL}/clientes`, formData)
+      toast.success("Cliente registrado")
+      onClienteCreado?.(res.data)
       onOpenChange(false)
     } catch (err) {
-      toast.error("Error al registrar proveedor")
+      toast.error("Error al registrar clientes")
     }
   }
 
@@ -63,7 +63,7 @@ export function ProveedorFormDialog({ open, onOpenChange, onProveedorCreado }: P
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Nuevo proveedor</SheetTitle>
+          <SheetTitle>Nuevo cliente</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 px-4">
           <div className="grid gap-3">
@@ -73,9 +73,9 @@ export function ProveedorFormDialog({ open, onOpenChange, onProveedorCreado }: P
               value={formData.tipoDocumento}
               onChange={handleChange}
               className="border rounded px-2 py-1"
-            >
-              <option value="RUC">RUC</option>
+            >              
               <option value="DNI">DNI</option>
+              <option value="RUC">RUC</option>
             </select>
           </div>
           <div className="grid gap-3">

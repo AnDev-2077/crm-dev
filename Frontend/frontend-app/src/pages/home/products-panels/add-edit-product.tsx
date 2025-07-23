@@ -54,7 +54,8 @@ export default function AddProductForm() {
   const [formData, setFormData] = useState({
     nombre: "",
     stock: "",
-    precio: "",
+    precio_compra: "",
+    precio_venta: "",
     tUnidad: "",
     descripcion: "",
   })
@@ -138,7 +139,8 @@ export default function AddProductForm() {
 
     formDataToSend.append('nombre', formData.nombre)
     formDataToSend.append('descripcion', formData.descripcion)
-    formDataToSend.append('precio', formData.precio)
+    formDataToSend.append('precio_compra', formData.precio_compra)
+    formDataToSend.append('precio_venta', formData.precio_venta)
     formDataToSend.append('stock', formData.stock)
     formDataToSend.append('tUnidad', formData.tUnidad)
     formDataToSend.append('proveedor_id', proveedorSeleccionado.id.toString())
@@ -162,7 +164,8 @@ export default function AddProductForm() {
       setFormData({
         nombre: "",
         stock: "",
-        precio: "",
+        precio_compra: "",
+        precio_venta: "",
         tUnidad: "",
         descripcion: "",
         
@@ -228,18 +231,35 @@ export default function AddProductForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="precio">Precio *</Label>
+                    <Label htmlFor="precio_compra">Precio de Compra*</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">S/.</span>
                       <Input
-                        id="precio"
+                        id="precio_compra"
                         type="number"
                         placeholder="0.00"
                         min="0"
                         step="0.01"
                         className="pl-8"
-                        value={formData.precio}
-                        onChange={(e) => handleInputChange("precio", e.target.value)}
+                        value={formData.precio_compra}
+                        onChange={(e) => handleInputChange("precio_compra", e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="precio_venta">Precio de Venta*</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">S/.</span>
+                      <Input
+                        id="precio_venta"
+                        type="number"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        className="pl-8"
+                        value={formData.precio_venta}
+                        onChange={(e) => handleInputChange("precio_venta", e.target.value)}
                         required
                       />
                     </div>
@@ -382,7 +402,8 @@ export default function AddProductForm() {
                       {proveedorSeleccionado?.nombre || "Proveedor"}
                     </p>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-green-600">S/.{formData.precio || "0.00"}</span>
+                      <span className="text-sm font-bold text-green-600">S/.{formData.precio_compra || "0.00"}</span>
+                      <span className="text-sm font-bold text-yellow-600">S/.{formData.precio_venta || "0.00"}</span>
                       <span className="text-xs text-gray-500">Stock: {formData.stock || "0"}</span>
                     </div>
                   </div>

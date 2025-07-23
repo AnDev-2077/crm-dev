@@ -1,10 +1,9 @@
-// BoletaExport.tsx
+// compraBoletaExport.tsx
 import React from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import BoletaPDF from "@/pages/home/templates/boletaPDF";
 import { Button } from "@/components/ui/button";
 
-// Tipos de props
 type Product = {
   nombre: string;
   unidad: string;
@@ -24,21 +23,18 @@ type Props = {
 };
 
 const BoletaExport = ({ selectedSupplierData, completeProducts }: Props) => {
-  // Verificar que haya datos
+
   const canGenerate =
     selectedSupplierData && completeProducts && completeProducts.length > 0;
 
-  // Generar número y fecha
   const numero = Date.now().toString().slice(-6);
   const fecha = new Date().toLocaleDateString();
 
-  // Calcular total general
   const totalGeneral = completeProducts.reduce(
     (acc, p) => acc + Number(p.precio) * Number(p.cantidad),
     0
   );
 
-  // Construir props para el PDF
   const pdfData = {
     numero,
     fecha,
@@ -55,6 +51,7 @@ const BoletaExport = ({ selectedSupplierData, completeProducts }: Props) => {
       total: Number(p.precio) * Number(p.cantidad),
     })),
     totalGeneral,
+    
   };
 
   return (

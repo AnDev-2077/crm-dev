@@ -36,16 +36,19 @@ import { Badge } from "@/components/ui/badge"
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [productCount, setProductCount] = useState<number>(0)
   const [providerCount, setProviderCount] = useState<number>(0)
+  const [clienteCount, setClienteCount] = useState<number>(0)
 
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const [productsRes, providersRes] = await Promise.all([
+        const [productsRes, providersRes, clienteRes] = await Promise.all([
           axios.get("http://127.0.0.1:8000/productos/"),
           axios.get("http://127.0.0.1:8000/proveedores/"),
+          axios.get("http://127.0.0.1:8000/clientes/"),
         ])
         setProductCount(productsRes.data.length)
         setProviderCount(providersRes.data.length)
+        setClienteCount(clienteRes.data.length)
       } catch (error) {
         console.error("Error al obtener los conteos:", error)
       }
@@ -87,6 +90,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Clientes",
           url: "/home/clients-panel",
           icon: Users,
+          badge: clienteCount || undefined,
           isActive: false,
         },
         {

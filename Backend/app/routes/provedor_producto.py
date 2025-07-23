@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session, joinedload
 from ..database import SessionLocal
 from ..models.productos import Producto
 from ..models.proveedores import Proveedor
+from ..models.clientes import Cliente
 from ..schemas.proveedores_schema import ProveedorCreate, ProveedorOut
+from ..schemas.clientes_schema import ClienteCreate, ClienteOut
 from ..schemas.producto_schema import ProductOut, ProductCreate, ProductoSchema
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +19,8 @@ from ..schemas.compra_schema import CompraCreate
 from ..models.compra import Compra
 from ..models.compra import DetalleCompra
 from sqlalchemy import func
+from ..models.ventas import Venta, DetalleVenta
+from ..schemas.ventas_schema import VentaCreate, VentaOut
 
 router = APIRouter()
 
@@ -57,7 +61,8 @@ def get_producto(producto_id: int, db: Session = Depends(get_db)):
 async def create_producto(
     nombre: str = Form(...),
     descripcion: str = Form(None),
-    precio: float = Form(None),
+    precio_compra: float = Form(None),
+    precio_venta: float = Form(None),
     stock: int = Form(None),
     tUnidad: int = Form(None), 
     proveedor_id: int = Form(None),
@@ -67,7 +72,8 @@ async def create_producto(
     producto_data = {
         "nombre": nombre,
         "descripcion": descripcion,
-        "precio": precio,
+        "precio_compra": precio_compra,
+        "precio_venta": precio_venta,
         "stock": stock,
         "tUnidad": tUnidad  
     }
@@ -107,7 +113,8 @@ async def update_producto(
     producto_id: int,
     nombre: str = Form(...),
     descripcion: str = Form(None),
-    precio: float = Form(None),
+    precio_compra: float = Form(None),
+    precio_venta: float = Form(None),
     stock: int = Form(None),
     tUnidad: int = Form(None), 
     proveedor_id: int = Form(None),
@@ -120,7 +127,8 @@ async def update_producto(
 
     producto.nombre = nombre
     producto.descripcion = descripcion
-    producto.precio = precio
+    producto.precio_compra = precio_compra
+    producto.precio_venta = precio_venta
     producto.stock = stock
     producto.tUnidad = tUnidad
 
@@ -167,7 +175,6 @@ def get_productos_por_proveedor(proveedor_id: int, db: Session = Depends(get_db)
 def get_unidades(db: Session = Depends(get_db)):
     return db.query(TipoUnidad).all()
 
-
 @router.post("/tipo-unidad/")
 def crear_tipo_unidad(unidad: TUnidadCreate, db: Session = Depends(get_db)):
     nueva_unidad = TipoUnidad(nombre=unidad.nombre)
@@ -189,13 +196,25 @@ def create_proveedor(proveedor: ProveedorCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_proveedor)
     return db_proveedor
+##########################CLIENTES######################################
+
+@router.get("/clientes/", response_model=list[ClienteOut])
+def read_clientes(db: Session = Depends(get_db)):
+    return db.query(Cliente).all()
+
+@router.post("/clientes/", response_model=ClienteOut)
+def create_clientes(cliente: ClienteCreate, db: Session = Depends(get_db)):
+    db_cliente = Cliente(**cliente.dict())
+    db.add(db_cliente)
+    db.commit()
+    db.refresh(db_cliente)
+    return db_cliente
 
 ###############################COMPRAS#########################################
 
 @router.post("/compras/")
 def crear_compra(compra: CompraCreate, db: Session = Depends(get_db)):
 
-    # Generar orden de compra
     ultimo_orden = db.query(func.max(Compra.orden_compra)).scalar()
     if ultimo_orden and ultimo_orden.isdigit():
         nuevo_numero = int(ultimo_orden) + 1
@@ -203,7 +222,6 @@ def crear_compra(compra: CompraCreate, db: Session = Depends(get_db)):
         nuevo_numero = 1
     orden_formateada = f"{nuevo_numero:07d}"
 
-    # Calcular total dinámicamente
     total_calculado = sum(item.cantidad * item.precio_unitario for item in compra.productos)
 
     nueva_compra = Compra(
@@ -213,7 +231,7 @@ def crear_compra(compra: CompraCreate, db: Session = Depends(get_db)):
     )
 
     db.add(nueva_compra)
-    db.flush()  # Para obtener el ID de la compra antes de crear los detalles
+    db.flush()
 
     for item in compra.productos:
         producto = db.query(Producto).filter(Producto.id == item.producto_id).first()
@@ -228,7 +246,6 @@ def crear_compra(compra: CompraCreate, db: Session = Depends(get_db)):
         )
         db.add(detalle)
 
-        # Aumentar stock
         producto.stock += item.cantidad
 
     db.commit()
@@ -245,4 +262,55 @@ def crear_compra(compra: CompraCreate, db: Session = Depends(get_db)):
 def obtener_siguiente_numero(db: Session = Depends(get_db)):
     ultima_compra = db.query(Compra).order_by(Compra.id.desc()).first()
     numero = ultima_compra.id + 1 if ultima_compra else 1
+    return {"numero_orden": f"{numero:07d}"}
+
+
+
+##########################VENTAS##############################
+
+@router.post("/ventas/", response_model=VentaOut)
+def crear_venta(venta: VentaCreate, db: Session = Depends(get_db)):
+    # Obtener el último número de orden registrado
+    ultimo_orden = db.query(func.max(Venta.orden_venta)).scalar()
+    if ultimo_orden and ultimo_orden.isdigit():
+        nuevo_numero = int(ultimo_orden) + 1
+    else:
+        nuevo_numero = 1
+    orden_formateada = f"{nuevo_numero:07d}"
+
+    nueva_venta = Venta(
+        cliente_id=venta.cliente_id,
+        orden_venta=orden_formateada,
+        fecha=datetime.now(),
+    )
+
+    db.add(nueva_venta)
+    db.flush() 
+
+    for item in venta.detalles:
+        detalle = DetalleVenta(
+            venta_id=nueva_venta.id,
+            producto_id=item.producto_id,
+            cantidad=item.cantidad,
+            precio_unitario=item.precio_unitario,
+        )
+        db.add(detalle)
+
+        producto = db.query(Producto).filter(Producto.id == item.producto_id).first()
+        if producto:
+            producto.stock -= item.cantidad
+
+    db.commit()
+    db.refresh(nueva_venta)
+
+    return nueva_venta
+
+@router.get("/ventas/", response_model=List[VentaOut])
+def listar_ventas(db: Session = Depends(get_db)):
+    return db.query(Venta).options(joinedload(Venta.detalles)).all()
+
+@router.get("/ventas/siguiente-numero")
+def obtener_siguiente_numero(db: Session = Depends(get_db)):
+    ultima_venta = db.query(Venta).order_by(Venta.id.desc()).first()
+    numero = ultima_venta.id + 1 if ultima_venta else 1
     return {"numero_orden": f"{numero:07d}"}

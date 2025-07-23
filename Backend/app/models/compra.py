@@ -6,9 +6,10 @@ class Compra(Base):
     __tablename__ = "compras"
     id = Column(Integer, primary_key=True, index=True)
     proveedor_id = Column(Integer, ForeignKey("proveedores.id"), nullable=False)
-    fecha = Column(DateTime, default=func.now())
-    detalles = relationship("DetalleCompra", back_populates="compra", cascade="all, delete-orphan")
+    fecha = Column(DateTime, default=func.now())    
     orden_compra = Column(String(20), unique=True, nullable=False)
+
+    detalles = relationship("DetalleCompra", back_populates="compra", cascade="all, delete-orphan")
 
 
 class DetalleCompra(Base):
@@ -18,4 +19,5 @@ class DetalleCompra(Base):
     producto_id = Column(Integer, ForeignKey("productos.id"), nullable=False)
     cantidad = Column(Integer, nullable=False)
     precio_unitario = Column(DECIMAL(10, 2), nullable=False)
+
     compra = relationship("Compra", back_populates="detalles")

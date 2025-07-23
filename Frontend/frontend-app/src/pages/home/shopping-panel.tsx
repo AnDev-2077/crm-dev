@@ -1,3 +1,4 @@
+//shopping-panel.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,6 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useRef } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import BoletaExport from "@/pages/home/templates/boletaExport";
 
 import {
   Select,
@@ -27,7 +32,7 @@ interface Product {
   id: string
   nombre: string
   stock: string
-  precio: string
+  precio_compra: string
   tipoUnidad: string
   descripcion: string
    tUnidad?: TipoUnidad | null
@@ -41,6 +46,7 @@ interface Proveedor {
   nombre: string
   telefono: string
   documento: string
+  correo: string;
 }
 export interface TipoUnidad {
   id: number;
@@ -68,7 +74,24 @@ export default function SupplierProductManager() {
 };
 
 const [supplierProducts, setSupplierProducts] = useState<Product[]>([])
+const pdfRef = useRef<HTMLDivElement>(null);
 
+const handleExportarPDF = async () => {
+  if (!pdfRef.current) return;
+
+  const canvas = await html2canvas(pdfRef.current, {
+    scale: 2,
+  });
+  const imgData = canvas.toDataURL("image/png");
+
+  const pdf = new jsPDF("p", "mm", "a4");
+  const imgProps = pdf.getImageProperties(imgData);
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+  pdf.save(`Orden_Compra_${numeroOrden || "sin_numero"}.pdf`);
+};
 
 useEffect(() => {
   const fetchNumeroOrden = async () => {
@@ -115,11 +138,11 @@ useEffect(() => {
         `${import.meta.env.VITE_API_URL}/productos/proveedor/${selectedSupplier}`
       )
       const data = response.data.map((p: any) => ({
-  id: p.id.toString(),
-  nombre: p.nombre,
-  stock: "",
-  precio: p.precio?.toString() || "",
-  tUnidad: p.tipo_unidad ? { id: p.tipo_unidad.id, nombre: p.tipo_unidad.nombre } : null
+        id: p.id.toString(),
+        nombre: p.nombre,
+        stock: "",
+        precio_compra: p.precio_compra?.toString() || "",
+        tUnidad: p.tipo_unidad ? { id: p.tipo_unidad.id, nombre: p.tipo_unidad.nombre } : null
 
 
 
@@ -131,7 +154,7 @@ useEffect(() => {
           id: crypto.randomUUID(),
           nombre: "",
           stock: "",
-          precio: "",
+          precio_compra: "",
           tipoUnidad: "",
           descripcion: "",
         }])
@@ -158,7 +181,7 @@ if (field === "nombre") {
           ? {
               ...product,
               nombre: value,
-              precio: selectedProduct.precio,
+              precio_compra: selectedProduct.precio_compra,
               tipoUnidad: selectedProduct.tUnidad?.nombre || "",
               tUnidad: selectedProduct.tUnidad || null,
 
@@ -183,7 +206,7 @@ if (field === "nombre") {
   return (
     product.nombre &&
     product.stock &&
-    product.precio &&
+    product.precio_compra &&
     product.tUnidad 
   )
 }
@@ -196,14 +219,14 @@ const addNewProduct = () => {
     id: crypto.randomUUID(),
     nombre: "",
     stock: "",
-    precio: "",
+    precio_compra: "",
     tipoUnidad: "",
     descripcion: "",
   }
   setProducts((prev) => [...prev, newProduct])
 }
 
-// Función para eliminar un producto por ID
+
 const removeProduct = (id: string) => {
   setProducts((prev) => prev.filter((p) => p.id !== id))
 }
@@ -216,19 +239,20 @@ const handleGuardarCompra = async () => {
       productos: completeProducts.map((p) => ({
         producto_id: Number(p.nombre), 
         cantidad: Number(p.stock),
-        precio_unitario: Number(p.precio),
+        precio_unitario: Number(p.precio_compra),
       })),
     };
 
     await axios.post(`${import.meta.env.VITE_API_URL}/compras/`, compraPayload);
 
-    setSelectedSupplier("");
+    
     
   } catch (error) {
     console.error("Error al guardar la compra", error);
     alert("Hubo un error al guardar la compra.");
   }
 };
+
  return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -332,8 +356,8 @@ const handleGuardarCompra = async () => {
                               </AccordionTrigger>
 
                               <div className="flex items-center gap-2">
-                                {product.precio && (
-                                  <span className="text-sm text-gray-600 font-medium">S/. {product.precio}</span>
+                                {product.precio_compra && (
+                                  <span className="text-sm text-gray-600 font-medium">S/. {product.precio_compra}</span>
                                 )}
                                 {products.length > 1 && (
                                   <Button
@@ -392,14 +416,14 @@ const handleGuardarCompra = async () => {
                                     </div>
 
                                     <div>
-                                      <Label htmlFor={`precio-${product.id}`}>Precio </Label>
+                                      <Label htmlFor={`precio-${product.id}`}>Precio de Compra </Label>
                                       <Input
                                         id={`precio-${product.id}`}
                                         type="number"
                                         step="0.01"
-                                        value={product.precio}
+                                        value={product.precio_compra}
                                         disabled
-                                        onChange={(e) => updateProduct(product.id, "precio", e.target.value)}
+                                        onChange={(e) => updateProduct(product.id, "precio_compra", e.target.value)}
                                         placeholder=""
                                       />
                                     </div>                                                                          
@@ -449,7 +473,7 @@ const handleGuardarCompra = async () => {
               </Card>
             )}
           </div>
-
+            
           {/* Columna derecha - Vista previa PDF */}
           <div className="lg:col-span-1">
             <Card className="sticky top-6">
@@ -479,8 +503,7 @@ const handleGuardarCompra = async () => {
                           <p>Telefono: {selectedSupplierData.telefono}</p>
                           <p>DNI / RUC: {selectedSupplierData.documento}</p>
                         </div>
-                      </div>
-                      
+                      </div>                      
                       {/* Lista de productos */}
                       {completeProducts.length > 0 && (
                         <div className="space-y-2">
@@ -501,10 +524,10 @@ const handleGuardarCompra = async () => {
                                     )}
                                   </div>
                                   <div className="text-right">
-                                    <p className="font-medium">S/. {product.precio}</p>
+                                    <p className="font-medium">S/. {product.precio_compra}</p>
                                     <p className="text-gray-600">
                                       Total: S/. 
-                                      {(Number.parseFloat(product.precio) * Number.parseFloat(product.stock)).toFixed(
+                                      {(Number.parseFloat(product.precio_compra) * Number.parseFloat(product.stock)).toFixed(
                                         2,
                                       )}
                                     </p>
@@ -523,7 +546,7 @@ const handleGuardarCompra = async () => {
                                 {completeProducts
                                   .reduce(
                                     (total, product) =>
-                                      total + Number.parseFloat(product.precio) * Number.parseFloat(product.stock),
+                                      total + Number.parseFloat(product.precio_compra) * Number.parseFloat(product.stock),
                                     0,
                                   )
                                   .toFixed(2)}
@@ -546,13 +569,31 @@ const handleGuardarCompra = async () => {
                     </div>
                   )}
                 </div>
-                 <Button onClick={handleGuardarCompra}>Guardar y Exportar</Button>
+                    {/* Botón de acción */}
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={async () => {
+                          await handleGuardarCompra();
+                          alert(" Compra guardada correctamente. Ahora puedes descargar el PDF.");
+                        }}
+                      >
+                        Guardar Compra
+                      </Button>
+                    </div>
 
+                    {/* PDF Exportación */}
+                    <BoletaExport
+                      selectedSupplierData={selectedSupplierData || null}
+                      completeProducts={completeProducts.map((p) => ({
+                        nombre: availableProducts.find((ap) => ap.id === p.nombre)?.nombre || "N/A",
+                        unidad: p.tipoUnidad || "N/A",
+                        cantidad: Number(p.stock),
+                        precio: Number(p.precio_compra),
+                      }))}
+                    />
               </CardContent>
-            </Card>
-            
-          </div>
-         
+            </Card>            
+          </div>         
         </div>
       </div>
     </div>

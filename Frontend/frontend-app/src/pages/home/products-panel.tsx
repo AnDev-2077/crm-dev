@@ -47,7 +47,8 @@ export type Productos = {
   id: number
   nombre: string
   descripcion: string
-  precio: number
+  precio_compra: number
+  precio_venta: number
   stock: number
   tipo_unidad: { id: number; nombre: string } | null
   fechaIngreso: string
@@ -87,16 +88,16 @@ export default function DataTableDemo() {
         </Button>
       ),
       cell: ({ row }) => <div>{row.getValue("nombre")}</div>,
+    },    
+    {
+      accessorKey: "precio_compra",
+      header: "Precio Compra",
+      cell: ({ row }) => <div>S/. {row.getValue("precio_compra")}</div>,
     },
     {
-      accessorKey: "descripcion",
-      header: "Descripción",
-      cell: ({ row }) => <div className="lowercase">{row.getValue("descripcion")}</div>,
-    },
-    {
-      accessorKey: "precio",
-      header: "Precio",
-      cell: ({ row }) => <div>S/. {row.getValue("precio")}</div>,
+      accessorKey: "precio_venta",
+      header: "Precio Venta",
+      cell: ({ row }) => <div>S/. {row.getValue("precio_venta")}</div>,
     },
     {
       accessorKey: "stock",
@@ -119,6 +120,11 @@ export default function DataTableDemo() {
         const nombres = proveedores?.map((p) => p.nombre).join(", ")
         return <div>{nombres || "—"}</div>
       },
+    },
+    {
+      accessorKey: "descripcion",
+      header: "Descripción",
+      cell: ({ row }) => <div className="lowercase">{row.getValue("descripcion")}</div>,
     },
     {
       accessorKey: "fechaIngreso",
@@ -284,8 +290,8 @@ export default function DataTableDemo() {
 
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-muted-foreground flex-1 text-sm">
-          {table.getFilteredSelectedRowModel().rows.length} de{" "}
-          {table.getFilteredRowModel().rows.length} seleccionados.
+          
+          {table.getFilteredRowModel().rows.length} productos registrados.
         </div>
         <div className="space-x-2">
           <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>

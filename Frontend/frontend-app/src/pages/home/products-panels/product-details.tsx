@@ -40,7 +40,8 @@ interface Product {
   id: number
   nombre: string
   stock: number
-  precio: number
+  precio_compra: number
+  precio_venta: number
   tipo_unidad: { id: number; nombre: string } | null
   descripcion: string
   imagen: string | null
@@ -114,7 +115,8 @@ export default function ProductDetails() {
       const formData = new FormData()
       formData.append("nombre", editedProduct.nombre)
       formData.append("stock", editedProduct.stock.toString())
-      formData.append("precio", editedProduct.precio.toString())
+      formData.append("precio_compra", editedProduct.precio_compra.toString())
+      formData.append("precio_venta", editedProduct.precio_venta.toString())
       formData.append("descripcion", editedProduct.descripcion || "")
       formData.append("tUnidad", editedProduct.tipo_unidad?.id.toString() || "")
 
@@ -139,7 +141,7 @@ export default function ProductDetails() {
       setSelectedImageFile(null)
       setPreviewImage(null)
     } catch (error) {
-      console.error("❌ Error al guardar el producto", error)
+      console.error(" Error al guardar el producto", error)
     }
   }
 
@@ -160,17 +162,28 @@ export default function ProductDetails() {
         <CardHeader className="flex justify-between items-center pb-6">
           <CardTitle className="text-2xl">Detalles del Producto</CardTitle>
           <div className="flex gap-2">
+            {!isEditing && (
+              <Button type="button" variant="outline">
+                <a href="/home/products-panel">Volver</a>
+              </Button>
+            )}
+
             {!isEditing ? (
-              <Button onClick={handleEdit}><Edit className="w-4 h-4 mr-1" /> Editar</Button>
+              <Button onClick={handleEdit}>
+                <Edit className="w-4 h-4 mr-1" /> Editar
+              </Button>
             ) : (
               <>
-                <Button onClick={handleSave}><Save className="w-4 h-4 mr-1" /> Guardar</Button>
-                <Button onClick={handleCancel} variant="outline"><X className="w-4 h-4 mr-1" /> Cancelar</Button>
+                <Button onClick={handleSave}>
+                  <Save className="w-4 h-4 mr-1" /> Guardar
+                </Button>
+                <Button onClick={handleCancel} variant="outline">
+                  <X className="w-4 h-4 mr-1" /> Cancelar
+                </Button>
               </>
             )}
           </div>
         </CardHeader>
-
         <CardContent className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
             {/* Imagen */}
@@ -269,16 +282,29 @@ export default function ProductDetails() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Precio</Label>
+                  <Label>Precio Compra</Label>
                   {isEditing ? (
                     <Input
                       type="number"
                       step="0.01"
-                      value={editedProduct.precio}
-                      onChange={(e) => handleInputChange("precio", parseFloat(e.target.value))}
+                      value={editedProduct.precio_compra}
+                      onChange={(e) => handleInputChange("precio_compra", parseFloat(e.target.value))}
                     />
                   ) : (
-                    <div className="p-3 bg-muted rounded-md">S/.{product.precio.toFixed(2)}</div>
+                    <div className="p-3 bg-muted rounded-md">S/.{product.precio_compra.toFixed(2)}</div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Precio Venta</Label>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editedProduct.precio_venta}
+                      onChange={(e) => handleInputChange("precio_venta", parseFloat(e.target.value))}
+                    />
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md">S/.{product.precio_venta.toFixed(2)}</div>
                   )}
                 </div>
               </div>
@@ -342,10 +368,19 @@ export default function ProductDetails() {
 
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">
-                  S/.{product.precio.toFixed(2)}
+                  S/.{product.precio_compra.toFixed(2)}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Precio por {product.tipo_unidad?.nombre.toLowerCase() || "unidad"}
+                  Precio por compra de {product.tipo_unidad?.nombre.toLowerCase() || "unidad"} 
+                </div>
+              </div>
+
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  S/.{product.precio_venta.toFixed(2)}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Precio por venta de {product.tipo_unidad?.nombre.toLowerCase() || "unidad"}
                 </div>
               </div>
 
