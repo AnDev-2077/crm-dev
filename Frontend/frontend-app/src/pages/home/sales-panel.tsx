@@ -361,7 +361,7 @@ useEffect(() => {
                       <TableHead>Tipo de unidad</TableHead>
                       <TableHead>Precio</TableHead>
                       <TableHead>Stock</TableHead>
-                      <TableHead className="text-right">Cantidad</TableHead>
+                      <TableHead className="text-center">Cantidad</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -395,8 +395,8 @@ useEffect(() => {
                                 {producto.stock} unidades
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-2">
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -409,10 +409,17 @@ useEffect(() => {
                                   type="number"
                                   min="0"
                                   max={producto.stock}
-                                  value={enVenta?.cantidad || 0}
+                                  value={enVenta ? enVenta.cantidad.toString() : "0"}
                                   onChange={(e) => {
-                                    const valor = parseInt(e.target.value) || 0;
-                                    if (valor <= producto.stock && enVenta) actualizarCantidad(producto.id, valor);
+                                    const valor = e.target.value;
+                                    if (valor === "") {
+                                      actualizarCantidad(producto.id, 0); // Si está vacío, pon 0
+                                      return;
+                                    }
+                                    let num = parseInt(valor, 10);
+                                    if (isNaN(num) || num < 0) num = 0;
+                                    if (num > producto.stock) num = producto.stock;
+                                    actualizarCantidad(producto.id, num);
                                   }}
                                   className="w-16 text-center"
                                 />

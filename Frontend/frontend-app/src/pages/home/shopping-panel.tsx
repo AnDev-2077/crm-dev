@@ -50,11 +50,12 @@ type Unidad = {
   nombre: string
 }
 interface Proveedor {
-  id: string
-  nombre: string
-  telefono: string
-  documento: string
+  id: string;
+  nombre: string;
+  telefono: string;
+  documento: string;
   correo: string;
+  tipoDocumento?: string;
 }
 export interface TipoUnidad {
   id: number;
@@ -596,16 +597,34 @@ const handleGuardarCompra = async () => {
                           )}
                         </Button>
                       ) : (
-                        <BoletaExport
-                          selectedSupplierData={selectedSupplierData || null}
-                          completeProducts={completeProducts.map((p) => ({
-                            nombre: availableProducts.find((ap) => ap.id === p.nombre)?.nombre || "N/A",
-                            unidad: p.tipoUnidad || "N/A",
-                            cantidad: Number(p.stock),
-                            precio: Number(p.precio_compra),
-                          }))}
-                          numeroOrden={numeroOrden}
-                        />
+                        <div className="space-y-2 w-full">
+                          <BoletaExport
+                            cliente={{
+                              nombre: selectedSupplierData?.nombre || "N/A",
+                              documento: selectedSupplierData?.documento || "",
+                              tipoDocumento: selectedSupplierData?.tipoDocumento || "RUC",
+                              correo: selectedSupplierData?.correo || "",
+                              telefono: selectedSupplierData?.telefono || "",
+                            }}
+                            completeProducts={completeProducts.map((p) => ({
+                              nombre: availableProducts.find((ap) => ap.id === p.nombre)?.nombre || "N/A",
+                              unidad: p.tipoUnidad || "N/A",
+                              cantidad: Number(p.stock),
+                              precio: Number(p.precio_compra),
+                            }))}
+                            numeroOrden={numeroOrden}
+                          />
+                          <Button
+                            className="w-full"
+                            onClick={() => {
+                              setProducts([]);
+                              setSelectedSupplier("");
+                              setCompraGuardada(false);
+                            }}
+                          >
+                            Nueva compra
+                          </Button>
+                        </div>
                       )}
                     </div>
               </CardContent>

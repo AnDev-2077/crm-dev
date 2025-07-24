@@ -50,6 +50,7 @@ export default function AddProductForm() {
   const [nombreUnidad, setNombreUnidad] = useState("")
   const [loadingUnidad, setLoadingUnidad] = useState(false)
   const [openDialog, setOpenDialog] = useState(false)
+  const [busquedaUnidad, setBusquedaUnidad] = useState("");
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -98,6 +99,16 @@ export default function AddProductForm() {
       setLoadingUnidad(false)
     }
   }
+
+  const handleEliminarUnidad = async (id: number) => {
+    try {
+      await axios.delete(`${API_URL}/tipo-unidad/${id}`);
+      setUnitTypes(unitTypes.filter(u => u.id !== id));
+      toast.success("Unidad eliminada");
+    } catch (error) {
+      toast.error("No se pudo eliminar la unidad");
+    }
+  };
 
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -276,12 +287,35 @@ export default function AddProductForm() {
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccione el tipo de unidad" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {unitTypes.map((unidad) => (
-                          <SelectItem key={unidad.id} value={unidad.id.toString()}>
-                            {unidad.nombre}
-                          </SelectItem>
-                        ))}
+                      <SelectContent className="max-h-60 overflow-y-auto">
+                        <div className="p-2">
+                          <Input
+                            placeholder="Buscar unidad..."
+                            value={busquedaUnidad}
+                            onChange={e => setBusquedaUnidad(e.target.value)}
+                            onKeyDown={e => e.stopPropagation()}
+                            className="mb-2"
+                          />
+                          {unitTypes
+                            .filter(u => u.nombre.toLowerCase().includes(busquedaUnidad.toLowerCase()))
+                            .map(unidad => (
+                              <div key={unidad.id} className="flex items-center justify-between">
+                                <SelectItem value={unidad.id.toString()}>{unidad.nombre}</SelectItem>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="text-red-500"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    handleEliminarUnidad(unidad.id);
+                                  }}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                        </div>
                       </SelectContent>
                     </Select>
 

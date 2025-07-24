@@ -183,6 +183,15 @@ def crear_tipo_unidad(unidad: TUnidadCreate, db: Session = Depends(get_db)):
     db.refresh(nueva_unidad)
     return nueva_unidad
 
+@router.delete("/tipo-unidad/{unidad_id}")
+def eliminar_unidad(unidad_id: int, db: Session = Depends(get_db)):
+    unidad = db.query(TipoUnidad).filter(TipoUnidad.id == unidad_id).first()
+    if not unidad:
+        raise HTTPException(status_code=404, detail="Unidad no encontrada")
+    db.delete(unidad)
+    db.commit()
+    return {"message": "Unidad eliminada correctamente"}
+
 #################################PROVEEDORES#################################
 
 @router.get("/proveedores/", response_model=list[ProveedorOut])
