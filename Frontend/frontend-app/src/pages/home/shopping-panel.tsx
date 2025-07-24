@@ -13,6 +13,14 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import BoletaExport from "@/pages/home/templates/boletaExport";
 
+// Spinner simple
+const Spinner = () => (
+  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+  </svg>
+);
+
 import {
   Select,
   SelectContent,
@@ -62,6 +70,8 @@ export default function SupplierProductManager() {
   const [searchNombre, setSearchNombre] = useState("");
   const [searchStock, setSearchStock] = useState("");
   const [numeroOrden, setNumeroOrden] = useState<string | null>(null);
+  const [loadingCompra, setLoadingCompra] = useState(false);
+  const [compraGuardada, setCompraGuardada] = useState(false);
 
   const fetchTipoUnidades = async (): Promise<TipoUnidad[]> => {
   try {
@@ -232,7 +242,8 @@ const removeProduct = (id: string) => {
 }
 const handleGuardarCompra = async () => {
   if (!selectedSupplier || completeProducts.length === 0) return;
-
+  setLoadingCompra(true);
+  setCompraGuardada(false);
   try {
     const compraPayload = {
       proveedor_id: Number(selectedSupplier),
@@ -244,17 +255,17 @@ const handleGuardarCompra = async () => {
     };
 
     await axios.post(`${import.meta.env.VITE_API_URL}/compras/`, compraPayload);
-
-    
-    
+    setCompraGuardada(true);
   } catch (error) {
     console.error("Error al guardar la compra", error);
     alert("Hubo un error al guardar la compra.");
+  } finally {
+    setLoadingCompra(false);
   }
 };
 
  return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Compras</h1>
@@ -571,26 +582,32 @@ const handleGuardarCompra = async () => {
                 </div>
                     {/* Botón de acción */}
                     <div className="flex justify-end">
-                      <Button
-                        onClick={async () => {
-                          await handleGuardarCompra();
-                          alert(" Compra guardada correctamente. Ahora puedes descargar el PDF.");
-                        }}
-                      >
-                        Guardar Compra
-                      </Button>
+                      {!compraGuardada ? (
+                        <Button
+                          onClick={handleGuardarCompra}
+                          disabled={loadingCompra}
+                        >
+                          {loadingCompra ? (
+                            <>
+                              <Spinner /> <span className="ml-2">Guardando...</span>
+                            </>
+                          ) : (
+                            "Guardar Compra"
+                          )}
+                        </Button>
+                      ) : (
+                        <BoletaExport
+                          selectedSupplierData={selectedSupplierData || null}
+                          completeProducts={completeProducts.map((p) => ({
+                            nombre: availableProducts.find((ap) => ap.id === p.nombre)?.nombre || "N/A",
+                            unidad: p.tipoUnidad || "N/A",
+                            cantidad: Number(p.stock),
+                            precio: Number(p.precio_compra),
+                          }))}
+                          numeroOrden={numeroOrden}
+                        />
+                      )}
                     </div>
-
-                    {/* PDF Exportación */}
-                    <BoletaExport
-                      selectedSupplierData={selectedSupplierData || null}
-                      completeProducts={completeProducts.map((p) => ({
-                        nombre: availableProducts.find((ap) => ap.id === p.nombre)?.nombre || "N/A",
-                        unidad: p.tipoUnidad || "N/A",
-                        cantidad: Number(p.stock),
-                        precio: Number(p.precio_compra),
-                      }))}
-                    />
               </CardContent>
             </Card>            
           </div>         

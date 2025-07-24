@@ -23,9 +23,12 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: "bold",
   },
+  // Corregido: estilos válidos para react-pdf
   line: {
-    borderBottom: "1px solid #000",
-    marginVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    marginTop: 5,
+    marginBottom: 5,
   },
   productRow: {
     flexDirection: "row",
@@ -66,43 +69,53 @@ const VentaBoletaPDF = ({
   vendedor,
   productos,
   totalGeneral,
-}: Props) => (
-  <Document>
-    <Page size="A5" style={styles.page}>
-      <View style={styles.header}>
-        <Text style={{ fontSize: 14, fontWeight: "bold" }}>ORDEN DE VENTA</Text>
-        <Text>#{numero}</Text>
-        <Text>{fecha}</Text>
-      </View>
+}: Props) => {
+  // Validaciones defensivas
+  const productosValidos = Array.isArray(productos) ? productos : [];
+  const clienteValido = cliente || { nombre: "N/A", documento: "N/A" };
 
-      <View style={styles.section}>
-        <Text style={styles.bold}>CLIENTE:</Text>
-        <Text>{cliente.nombre} (DNI: {cliente.documento})</Text>
-      </View>
+  return (
+    <Document>
+      <Page size="A5" style={styles.page}>
+        <View style={styles.header}>
+          <Text style={{ fontSize: 14, fontWeight: "bold" }}>ORDEN DE VENTA</Text>
+          <Text>#{numero}</Text>
+          <Text>{fecha}</Text>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.bold}>VENDEDOR:</Text>
-        <Text>{vendedor}</Text>
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.bold}>CLIENTE:</Text>
+          <Text>{clienteValido.nombre} (DNI: {clienteValido.documento})</Text>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.bold}>PRODUCTOS:</Text>
-        {productos.map((prod, index) => (
-          <View key={index}>
-            <View style={styles.productRow}>
-              <Text>{prod.nombre}</Text>
-              <Text>S/. {prod.precio}</Text>
-            </View>
-            <Text>
-              {prod.cantidad} x S/. {prod.precio} - Total: S/. {prod.total.toFixed(2)}
-            </Text>
-          </View>
-        ))}
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.bold}>VENDEDOR:</Text>
+          <Text>{vendedor}</Text>
+        </View>
 
-      <Text style={styles.total}>TOTAL: S/. {totalGeneral.toFixed(2)}</Text>
-    </Page>
-  </Document>
-);
+        <View style={styles.section}>
+          <Text style={styles.bold}>PRODUCTOS:</Text>
+          {productosValidos.length === 0 ? (
+            <Text>No hay productos.</Text>
+          ) : (
+            productosValidos.map((prod, index) => (
+              <View key={index}>
+                <View style={styles.productRow}>
+                  <Text>{prod.nombre}</Text>
+                  <Text>S/. {prod.precio}</Text>
+                </View>
+                <Text>
+                  {prod.cantidad} x S/. {prod.precio} - Total: S/. {prod.total?.toFixed ? prod.total.toFixed(2) : "0.00"}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
+
+        <Text style={styles.total}>TOTAL: S/. {typeof totalGeneral === "number" ? totalGeneral.toFixed(2) : "0.00"}</Text>
+      </Page>
+    </Document>
+  );
+};
 
 export default VentaBoletaPDF;

@@ -20,14 +20,14 @@ type Proveedor = {
 type Props = {
   selectedSupplierData: Proveedor | null;
   completeProducts: Product[];
+  numeroOrden: string | null;
 };
 
-const BoletaExport = ({ selectedSupplierData, completeProducts }: Props) => {
+const BoletaExport = ({ selectedSupplierData, completeProducts, numeroOrden }: Props) => {
 
   const canGenerate =
     selectedSupplierData && completeProducts && completeProducts.length > 0;
 
-  const numero = Date.now().toString().slice(-6);
   const fecha = new Date().toLocaleDateString();
 
   const totalGeneral = completeProducts.reduce(
@@ -36,7 +36,7 @@ const BoletaExport = ({ selectedSupplierData, completeProducts }: Props) => {
   );
 
   const pdfData = {
-    numero,
+    numero: numeroOrden || "N/A",
     fecha,
     proveedor: {
       nombre: selectedSupplierData?.nombre || "N/A",
@@ -59,7 +59,7 @@ const BoletaExport = ({ selectedSupplierData, completeProducts }: Props) => {
       {canGenerate && (
         <PDFDownloadLink
           document={<BoletaPDF {...pdfData} />}
-          fileName={`orden_compra_${selectedSupplierData.nombre}_${numero}.pdf`}
+          fileName={`orden_compra_${selectedSupplierData.nombre}_${numeroOrden}.pdf`}
         >
           {({ loading }) => (
             <Button
