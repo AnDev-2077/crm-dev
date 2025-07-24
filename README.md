@@ -49,17 +49,6 @@ CREATE TABLE proveedor_producto (
     FOREIGN KEY (producto_id) REFERENCES Productos(id) 
 );
 
-CREATE TABLE clientes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    correo VARCHAR(100),
-    telefono VARCHAR(20),
-    direccion VARCHAR(100),    
-    is_active tinyint(1) default 1 NULL,
-    documento VARCHAR(50),
-	tipoDocumento VARCHAR(50) NOT NULL default 'RUC'
-);
-
 CREATE TABLE compras (
     id INT AUTO_INCREMENT PRIMARY KEY,
     proveedor_id INT NOT NULL,

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.provedor_producto import router as provedor_producto_router
+from app.routes.auth import router as auth_router
 from sqlalchemy import text
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -23,6 +24,7 @@ IMAGES_DIR.mkdir(exist_ok=True)
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 app.include_router(provedor_producto_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def root():
