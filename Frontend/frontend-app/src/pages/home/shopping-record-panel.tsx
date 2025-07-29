@@ -1,8 +1,16 @@
 "use client"
 
+import * as React from "react"
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import axios from "axios"
+import { useNavigate } from "react-router-dom"
+import ExcelJS from "exceljs"
+import type {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+} from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -115,6 +123,65 @@ export default function ShoppingHistory() {
   // Obtener proveedores únicos para el filtro
   const proveedoresUnicos = [...new Set(compras.map(compra => compra.proveedor?.nombre || "Sin proveedor").filter(nombre => nombre !== "Sin proveedor"))]
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency: 'PEN'
+    }).format(amount)
+  }
+
+  const exportToExcel = async () => {
+    // Crear workbook y worksheet
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Compras')
+
+    // Definir columnas
+    worksheet.columns = [
+      { header: 'Orden de Compra', key: 'orden', width: 15 },
+      { header: 'Fecha', key: 'fecha', width: 12 },
+      { header: 'Proveedor', key: 'proveedor', width: 25 },
+      { header: 'Documento', key: 'documento', width: 15 },
+      { header: 'Productos', key: 'productos', width: 10 },
+      { header: 'Total', key: 'total', width: 15 },
+      { header: 'Estado', key: 'estado', width: 12 }
+    ]
+
+    // Agregar datos
+    compras.forEach((compra: any) => {
+      worksheet.addRow({
+        orden: compra.orden_compra || 'N/A',
+        fecha: compra.fecha ? new Date(compra.fecha).toLocaleDateString('es-ES') : 'N/A',
+        proveedor: compra.proveedor?.nombre || 'Sin proveedor',
+        documento: compra.proveedor?.documento || 'N/A',
+        productos: compra.detalles?.length || 0,
+        total: formatCurrency(compra.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0),
+        estado: 'Completada'
+      })
+    })
+
+    // Estilo para el header
+    worksheet.getRow(1).font = { bold: true }
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    }
+
+    // Generar nombre de archivo con fecha
+    const fecha = new Date().toISOString().split('T')[0]
+    const fileName = `compras_${fecha}.xlsx`
+
+    // Descargar archivo
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+    window.URL.revokeObjectURL(url)
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -135,7 +202,7 @@ export default function ShoppingHistory() {
           <h1 className="text-3xl font-bold tracking-tight">Historial de Compras</h1>
           <p className="text-muted-foreground">Gestiona y revisa todas tus transacciones de compras</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2" onClick={exportToExcel}>
           <Download className="h-4 w-4" />
           Exportar
         </Button>

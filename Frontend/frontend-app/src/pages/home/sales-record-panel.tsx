@@ -1,15 +1,32 @@
 "use client"
 
+import * as React from "react"
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import axios from "axios"
+import { useNavigate } from "react-router-dom"
+import ExcelJS from "exceljs"
+import type {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+} from "@tanstack/react-table"
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import { ChevronLeft, ChevronRight, Search, Filter, Download, Eye } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, Search, Filter, Download, Eye } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 
 interface Venta {
   id: number
@@ -115,6 +132,65 @@ export default function SalesHistory() {
   // Obtener clientes únicos para el filtro
   const clientesUnicos = [...new Set(ventas.map(venta => venta.cliente.nombre))]
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency: 'PEN'
+    }).format(amount)
+  }
+
+  const exportToExcel = async () => {
+    // Crear workbook y worksheet
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Ventas')
+
+    // Definir columnas
+    worksheet.columns = [
+      { header: 'Orden de Venta', key: 'orden', width: 15 },
+      { header: 'Fecha', key: 'fecha', width: 12 },
+      { header: 'Cliente', key: 'cliente', width: 25 },
+      { header: 'Documento', key: 'documento', width: 15 },
+      { header: 'Productos', key: 'productos', width: 10 },
+      { header: 'Total', key: 'total', width: 15 },
+      { header: 'Estado', key: 'estado', width: 12 }
+    ]
+
+    // Agregar datos
+    ventas.forEach((venta: any) => {
+      worksheet.addRow({
+        orden: venta.orden_venta || 'N/A',
+        fecha: venta.fecha ? new Date(venta.fecha).toLocaleDateString('es-ES') : 'N/A',
+        cliente: venta.cliente?.nombre || 'Sin cliente',
+        documento: venta.cliente?.documento || 'N/A',
+        productos: venta.detalles?.length || 0,
+        total: formatCurrency(venta.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0),
+        estado: 'Completada'
+      })
+    })
+
+    // Estilo para el header
+    worksheet.getRow(1).font = { bold: true }
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    }
+
+    // Generar nombre de archivo con fecha
+    const fecha = new Date().toISOString().split('T')[0]
+    const fileName = `ventas_${fecha}.xlsx`
+
+    // Descargar archivo
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+    window.URL.revokeObjectURL(url)
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -135,7 +211,7 @@ export default function SalesHistory() {
           <h1 className="text-3xl font-bold tracking-tight">Historial de Ventas</h1>
           <p className="text-muted-foreground">Gestiona y revisa todas tus transacciones de ventas</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2" onClick={exportToExcel}>
           <Download className="h-4 w-4" />
           Exportar
         </Button>
