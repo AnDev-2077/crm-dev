@@ -413,7 +413,7 @@ useEffect(() => {
                                   onChange={(e) => {
                                     const valor = e.target.value;
                                     if (valor === "") {
-                                      actualizarCantidad(producto.id, 0); // Si está vacío, pon 0
+                                      actualizarCantidad(producto.id, 0); 
                                       return;
                                     }
                                     let num = parseInt(valor, 10);

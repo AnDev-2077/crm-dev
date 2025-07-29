@@ -421,8 +421,26 @@ const handleGuardarCompra = async () => {
                                       <Input
                                         id={`stock-${product.id}`}
                                         type="number"
+                                        min="1"
                                         value={product.stock}
-                                        onChange={(e) => updateProduct(product.id, "stock", e.target.value)}
+                                        onChange={(e) => {
+                                          const valor = e.target.value;
+                                          if (valor === "") {
+                                            updateProduct(product.id, "stock", "0");
+                                            return;
+                                          }
+                                          const num = parseInt(valor, 10);
+                                          if (isNaN(num) || num < 0) {
+                                            updateProduct(product.id, "stock", "0");
+                                          } else {
+                                            updateProduct(product.id, "stock", valor);
+                                          }
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "-" || e.key === "e") {
+                                            e.preventDefault();
+                                          }
+                                        }}
                                         placeholder="Ejemplo: 10"
                                       />
                                     </div>

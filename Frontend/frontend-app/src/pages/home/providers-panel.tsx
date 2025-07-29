@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import axios from "axios"
+import { useNavigate } from "react-router-dom"
 import type {
   ColumnDef,
   ColumnFiltersState,
@@ -48,89 +49,8 @@ export type Provider = {
   direccion: string
 }
 
-export const columns: ColumnDef<Provider>[] = [
-
-  {
-    accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <div>{row.getValue("id")}</div>,
-  },
-  {
-    accessorKey: "nombre",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Nombre
-        <ArrowUpDown />
-      </Button>
-    ),
-    cell: ({ row }) => <div>{row.getValue("nombre")}</div>,
-  },
-  {
-    accessorKey: "documento",
-    header: "Documento",
-    cell: ({ row }) => (
-      <div className="lowercase">{row.getValue("documento")}</div>
-    ),
-  },
-  {
-    accessorKey: "tipoDocumento",
-    header: "Tipo de Documento",
-    cell: ({ row }) => (
-      <div className="lowercase">{row.getValue("tipoDocumento")}</div>
-    ),
-  },
-  {
-    accessorKey: "telefono",
-    header: "Teléfono",
-    cell: ({ row }) => <div>{row.getValue("telefono")}</div>,
-  },
-  {
-    accessorKey: "correo",
-    header: "Correo",
-    cell: ({ row }) => (
-      <div className="lowercase">{row.getValue("correo")}</div>
-    ),
-  },  
-  {
-    accessorKey: "direccion",
-    header: "Dirección",
-    cell: ({ row }) => <div>{row.getValue("direccion")}</div>,
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const provider = row.original
-      const providerId = provider.id.toString()
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(providerId)}
-            >
-              Copy provider ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
-
 export default function DataTableDemo() {
+  const navigate = useNavigate()
   const [providers, setProviders] = React.useState<Provider[]>([])
   const [loading, setLoading] = React.useState(true)
 
@@ -148,6 +68,80 @@ export default function DataTableDemo() {
     setProviders((prev) => [...prev, nuevo])
   }
 
+  const columns: ColumnDef<Provider>[] = [
+    {
+      accessorKey: "id",
+      header: "ID",
+      cell: ({ row }) => <div>{row.getValue("id")}</div>,
+    },
+    {
+      accessorKey: "nombre",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Nombre
+          <ArrowUpDown />
+        </Button>
+      ),
+      cell: ({ row }) => <div>{row.getValue("nombre")}</div>,
+    },
+    {
+      accessorKey: "documento",
+      header: "Documento",
+      cell: ({ row }) => (
+        <div className="lowercase">{row.getValue("documento")}</div>
+      ),
+    },
+    {
+      accessorKey: "tipoDocumento",
+      header: "Tipo de Documento",
+      cell: ({ row }) => (
+        <div className="lowercase">{row.getValue("tipoDocumento")}</div>
+      ),
+    },
+    {
+      accessorKey: "telefono",
+      header: "Teléfono",
+      cell: ({ row }) => <div>{row.getValue("telefono")}</div>,
+    },
+    {
+      accessorKey: "correo",
+      header: "Correo",
+      cell: ({ row }) => (
+        <div className="lowercase">{row.getValue("correo")}</div>
+      ),
+    },  
+    {
+      accessorKey: "direccion",
+      header: "Dirección",
+      cell: ({ row }) => <div>{row.getValue("direccion")}</div>,
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const providerId = row.original.id.toString()
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate(`/home/providers-panels/${providerId}`)}>
+                Ver proveedor
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
 
   React.useEffect(() => {
     const fetchProviders = async () => {
@@ -232,15 +226,11 @@ export default function DataTableDemo() {
         <Button onClick={() => setDialogOpen(true)}>+ Nuevo proveedor</Button>
       </div>
     </div>
-
       <ProveedorFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onProveedorCreado={handleProveedorCreado}
       />
-
-
-
       <div className="rounded-md border">
         <Table>
           <TableHeader>

@@ -114,23 +114,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           isActive: false,
         },
         {
+          title: "Historial de Compras",
+          url: "/home/shopping-record-panel",
+          icon: PackageSearch,
+          isActive: false,
+        },
+        {
           title: "Ventas",
           url: "/home/sales-panel",
           icon: BanknoteArrowDown,
           isActive: false,
         },
         {
-          title: "Pedidos",
-          url: "/home/orders-panel",
+          title: "Historial de Ventas",
+          url: "/home/sales-record-panel",
           icon: PackageSearch,
           isActive: false,
         },
-        {
-          title: "Kardex",
-          url: "/home/kardex-panel",
-          icon: PackageSearch,
-          isActive: false,
-        },
+        
       ],
     },
     {
