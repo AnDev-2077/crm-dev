@@ -5,13 +5,14 @@ import { Link } from "react-router-dom"
 import {
   BarChart3,
   Bell,
-    ShoppingCart,
+  ShoppingCart,
   BanknoteArrowDown,
   PackageSearch,
   SquareChartGantt,
   Home, 
   Settings,
   Users,
+  User,
   Activity,
   TrendingUp,
   Clock,
@@ -84,22 +85,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ],
     },
     {
-      title: "Gestión",
+      title: "Cormercial",
       items: [
-        {
-          title: "Clientes",
-          url: "/home/clients-panel",
-          icon: Users,
-          badge: clienteCount || undefined,
-          isActive: false,
-        },
-        {
-          title: "Proveedores",
-          url: "/home/providers-panel",
-          icon: Users,
-          badge: providerCount || undefined,
-          isActive: false,
-        },
         {
           title: "Productos",
           url: "/home/products-panel",
@@ -134,6 +121,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ],
     },
     {
+      title: "Gestion",
+      items: [
+        {
+          title: "Clientes",
+          url: "/home/clients-panel",
+          icon: Users,
+          badge: clienteCount || undefined,
+          isActive: false,
+        },
+        {
+          title: "Proveedores",
+          url: "/home/providers-panel",
+          icon: Users,
+          badge: providerCount || undefined,
+          isActive: false,
+        },
+        {
+          title: "Usuarios",
+          url: "/home/users-panel",
+          icon: User,
+          badge: providerCount || undefined,
+          isActive: false,
+        },
+      ],
+    },
+    {
       title: "Sistema",
       items: [
         {
@@ -149,7 +162,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           isActive: false,
         },
       ],
-    },  ]
+    },
+  ]
   return (
     <Sidebar side="left" {...props}>
       <SidebarHeader>

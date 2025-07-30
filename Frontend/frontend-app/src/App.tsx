@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 
 import './App.css'
-import { Button } from './components/ui/button';
 
 function App() {
 
@@ -10,15 +9,9 @@ function App() {
   }, []);
 
   return (
-    
-      
       <div>
-
-        <Button variant="default">Click Me</Button>
+        <span>Bienvenido</span>
       </div>
-       
-
-
   )
 }
 

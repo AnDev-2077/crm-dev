@@ -14,6 +14,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import DashboardPanel from "@/pages/home/dashboard-panels"
 import ProvidersPanel from "@/pages/home/providers-panel"
 import ClientsPanel from "@/pages/home/clients-panel"
+import UsersPanel from "@/pages/home/users-panel"
 import ProductsPanel from "@/pages/home/products-panel"
 import ShoppingPanel from "@/pages/home/shopping-panel"
 import SalesPanel from "@/pages/home/sales-panel"
@@ -48,6 +49,7 @@ export default function HomePage() {
             <Route path="providers-panel" element={<ProvidersPanel/>}></Route>
             <Route path="clients-panel" element={<ClientsPanel/>}></Route>
             <Route path="products-panel" element={<ProductsPanel/>}></Route>
+            <Route path="users-panel" element={<UsersPanel/>}></Route>
             <Route path="shopping-panel" element={<ShoppingPanel/>}></Route>
             <Route path="sales-panel" element={<SalesPanel/>}></Route>
             <Route path="orders-panel" element={<OrdersPanel/>}></Route>

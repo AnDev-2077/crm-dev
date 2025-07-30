@@ -1,8 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
+import axios from "axios"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,16 +11,86 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Building2, Mail, Lock } from "lucide-react"
 
+import { useAuth } from "@/context/AuthContext"
+
 export default function LoginPage() {
+  const navigate = useNavigate()
+  
+  // Manejo seguro del AuthContext
+  let authContext;
+  try {
+    authContext = useAuth()
+  } catch (error) {
+    console.error("Error accediendo al AuthContext:", error)
+    authContext = null
+  }
+  
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) 
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Aquí iría la lógica de autenticación
-    console.log("Login attempt:", { email, password, rememberMe })
+    console.log("Iniciando login...", { email, password: "***" })
+    
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      console.log("Haciendo petición POST...")
+      
+      const response = await axios.post(`http://127.0.0.1:8000/auth/login`, {
+        correo: email, 
+        contraseña: password
+      })
+
+      console.log("Respuesta recibida:", response.data)
+
+      const { access_token } = response.data
+
+      if (!access_token) {
+        throw new Error("No se recibió token de acceso")
+      }
+
+      console.log("Token recibido, guardando...")
+
+      
+      if (authContext && authContext.login) {
+        await authContext.login(access_token)
+      } else {
+        console.warn("AuthContext no disponible, usando localStorage")
+        localStorage.setItem("token", access_token)
+      }
+
+      console.log("Login exitoso, navegando a /home")
+      navigate("/home")
+      
+    } catch (error) {
+      console.error("Error completo en login:", error)
+      
+      if (axios.isAxiosError(error)) {
+        console.error("Error de Axios:")
+        console.error("Status:", error.response?.status)
+        console.error("Data:", error.response?.data)
+        console.error("Headers:", error.response?.headers)
+        
+        const errorMessage = error.response?.data?.detail || 
+                           error.response?.data?.message || 
+                           `Error ${error.response?.status}: Credenciales inválidas`
+        setError(errorMessage)
+      } else if (error instanceof Error) {
+        console.error("Error JS:", error.message)
+        setError(error.message)
+      } else {
+        console.error("Error desconocido:", error)
+        setError("Error de conexión. Intenta nuevamente.")
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -30,8 +101,8 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
             <Building2 className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">CRM Pro</h1>
-          <p className="text-gray-600 mt-2">Gestiona tus clientes de manera eficiente</p>
+          <h1 className="text-3xl font-bold text-gray-900">Adisan</h1>
+          <p className="text-gray-600 mt-2">Venta de articulos al por mayor</p>
         </div>
 
         <Card className="shadow-xl border-0">
@@ -42,6 +113,13 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
+              {/* Mostrar error si existe */}
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                  {error}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Correo Electrónico
@@ -51,11 +129,12 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="usuario@empresa.com"
+                    placeholder="admin@gmail.com" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={isLoading} 
                   />
                 </div>
               </div>
@@ -74,11 +153,13 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -91,6 +172,7 @@ export default function LoginPage() {
                     id="remember"
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    disabled={isLoading}
                   />
                   <Label htmlFor="remember" className="text-sm text-gray-600">
                     Recordarme
@@ -103,8 +185,12 @@ export default function LoginPage() {
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                Iniciar Sesión
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={isLoading}
+              >
+                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
 
               <div className="text-center text-sm text-gray-600">
@@ -119,15 +205,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2024 CRM Pro. Todos los derechos reservados.</p>
-          <div className="flex justify-center space-x-4 mt-2">
-            <Button variant="link" className="px-0 text-xs text-gray-400 hover:text-gray-600">
-              Términos de Servicio
-            </Button>
-            <Button variant="link" className="px-0 text-xs text-gray-400 hover:text-gray-600">
-              Política de Privacidad
-            </Button>
-          </div>
+          <p>© 2024 Adisan. Todos los derechos reservados.</p>
         </div>
       </div>
     </div>
