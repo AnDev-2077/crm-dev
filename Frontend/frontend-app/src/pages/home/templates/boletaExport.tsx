@@ -15,19 +15,27 @@ type Proveedor = {
   nombre: string;
   correo: string;
   telefono: string;
+  documento?: string;
+  tipoDocumento?: string;
 };
 
 type Props = {
-  selectedSupplierData: Proveedor | null;
+  cliente?: {
+    nombre: string;
+    documento: string;
+    tipoDocumento?: string;
+    correo?: string;
+    telefono?: string;
+  };
   completeProducts: Product[];
+  numeroOrden: string | null;
 };
 
-const BoletaExport = ({ selectedSupplierData, completeProducts }: Props) => {
+const BoletaExport = ({ cliente, completeProducts, numeroOrden }: Props) => {
 
   const canGenerate =
-    selectedSupplierData && completeProducts && completeProducts.length > 0;
+    cliente && completeProducts && completeProducts.length > 0;
 
-  const numero = Date.now().toString().slice(-6);
   const fecha = new Date().toLocaleDateString();
 
   const totalGeneral = completeProducts.reduce(
@@ -36,13 +44,9 @@ const BoletaExport = ({ selectedSupplierData, completeProducts }: Props) => {
   );
 
   const pdfData = {
-    numero,
+    numero: numeroOrden || "N/A",
     fecha,
-    proveedor: {
-      nombre: selectedSupplierData?.nombre || "N/A",
-      contacto: selectedSupplierData?.correo || "N/A",
-      telefono: selectedSupplierData?.telefono || "N/A",
-    },
+    cliente: cliente || undefined,
     productos: completeProducts.map((p) => ({
       nombre: p.nombre,
       unidad: p.unidad,
@@ -55,22 +59,24 @@ const BoletaExport = ({ selectedSupplierData, completeProducts }: Props) => {
   };
 
   return (
-    <div className="w-full flex justify-end mt-4">
+    <div className="w-full mt-0">
       {canGenerate && (
-        <PDFDownloadLink
-          document={<BoletaPDF {...pdfData} />}
-          fileName={`orden_compra_${selectedSupplierData.nombre}_${numero}.pdf`}
-        >
-          {({ loading }) => (
-            <Button
-              className="w-full sm:w-auto"
-              disabled={loading}
-              variant="default"
-            >
-              {loading ? "Generando PDF..." : "Exportar como PDF"}
-            </Button>
-          )}
-        </PDFDownloadLink>
+        <div className="flex justify-end w-full">
+          <PDFDownloadLink
+            document={<BoletaPDF {...pdfData} />}
+            fileName={`orden_compra_${cliente?.nombre}_${numeroOrden}.pdf`}
+          >
+            {({ loading }) => (
+              <Button
+                className="sm:w-auto"
+                disabled={loading}
+                variant="default"
+              >
+                {loading ? "Generando PDF..." : "Exportar como PDF"}
+              </Button>
+            )}
+          </PDFDownloadLink>
+        </div>
       )}
     </div>
   );

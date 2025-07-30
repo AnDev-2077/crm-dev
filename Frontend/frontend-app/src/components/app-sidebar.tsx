@@ -67,21 +67,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           url: "/home",
           icon: Home,
           isActive: true,
-        },
-        {
-          title: "Analíticas",
-          url: "#",
-          icon: BarChart3,
-          badge: "Pro",
-          isActive: false,
-        },
-        {
-          title: "Actividad",
-          url: "#",
-          icon: Activity,
-          isActive: false,
-        },
-        
+        },        
       ],
     },
     {
@@ -101,14 +87,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           isActive: false,
         },
         {
+          title: "Historial de Compras",
+          url: "/home/shopping-record-panel",
+          icon: PackageSearch,
+          isActive: false,
+        },
+        {
           title: "Ventas",
           url: "/home/sales-panel",
           icon: BanknoteArrowDown,
           isActive: false,
         },
         {
-          title: "Pedidos",
-          url: "/home/orders-panel",
+          title: "Historial de Ventas",
+          url: "/home/sales-record-panel",
           icon: PackageSearch,
           isActive: false,
         },
@@ -162,18 +154,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           isActive: false,
         },
       ],
-    },
-  ]
+    },  ]
   return (
     <Sidebar side="left" {...props}>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <TrendingUp className="size-4" />
+          <div className="flex aspect-square size-12 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            {/* Opción 1: Imagen desde assets */}
+            <img 
+              src="/logo2.png" 
+              alt="Logo" 
+              className="size-13 object-contain"
+            />
           </div>
           <div className="flex flex-col gap-0.5 leading-none">
-            <span className="font-semibold">Panel Control</span>
-            <span className="text-xs text-sidebar-foreground/70">v2.1.0</span>
+            <span className="font-semibold">Adisan</span>
+            <span className="text-xs text-sidebar-foreground/70">v1.0.0</span>
           </div>
         </div>
       </SidebarHeader>
@@ -206,10 +202,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center gap-2 px-2 py-2 text-xs text-sidebar-foreground/70">
-          <Clock className="size-3" />
-          <span>Última actualización: hace 2 min</span>
-        </div>
       </SidebarFooter>
 
       <SidebarRail />

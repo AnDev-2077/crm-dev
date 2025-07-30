@@ -18,8 +18,9 @@ import UsersPanel from "@/pages/home/users-panel"
 import ProductsPanel from "@/pages/home/products-panel"
 import ShoppingPanel from "@/pages/home/shopping-panel"
 import SalesPanel from "@/pages/home/sales-panel"
-import OrdersPanel from "@/pages/home/orders-panel"
-import KardexPanel from "@/pages/home/kardex-panel"
+import OrdersPanel from "@/pages/home/sales-record-panel"
+import ShoppingRecordPanel from "@/pages/home/shopping-record-panel"
+
 
 export default function HomePage() {
   return (
@@ -52,8 +53,9 @@ export default function HomePage() {
             <Route path="users-panel" element={<UsersPanel/>}></Route>
             <Route path="shopping-panel" element={<ShoppingPanel/>}></Route>
             <Route path="sales-panel" element={<SalesPanel/>}></Route>
-            <Route path="orders-panel" element={<OrdersPanel/>}></Route>
-            <Route path="kardex-panel" element={<KardexPanel/>}></Route>
+            <Route path="sales-record-panel" element={<OrdersPanel/>}></Route>
+            <Route path="shopping-record-panel" element={<ShoppingRecordPanel/>}></Route>
+
           </Routes>
 
         </div>

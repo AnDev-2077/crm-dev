@@ -1,249 +1,390 @@
+import React, { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BarChart3, Users, DollarSign, Activity, MessageSquare, Calendar, Clock } from "lucide-react"
+import { 
+  BarChart3, 
+  Users, 
+  DollarSign, 
+  Activity, 
+  MessageSquare, 
+  Calendar, 
+  Clock,
+  ShoppingCart,
+  Package,
+  TrendingUp,
+  TrendingDown,
+  Eye,
+  UserCheck,
+  Truck,
+  Store
+} from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import axios from "axios"
+
+interface DashboardStats {
+  totalVentas: number
+  totalCompras: number
+  totalProductos: number
+  totalClientes: number
+  totalProveedores: number
+  ventasRecientes: any[]
+  comprasRecientes: any[]
+  productosBajoStock: any[]
+  topProductos: any[]
+}
 
 export default function DashboardPanel() {
-  const stats = [
+  const [stats, setStats] = useState<DashboardStats>({
+    totalVentas: 0,
+    totalCompras: 0,
+    totalProductos: 0,
+    totalClientes: 0,
+    totalProveedores: 0,
+    ventasRecientes: [],
+    comprasRecientes: [],
+    productosBajoStock: [],
+    topProductos: []
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        
+        // Obtener todos los datos en paralelo
+        const [ventasRes, comprasRes, productosRes, clientesRes, proveedoresRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}/ventas/`),
+          axios.get(`${import.meta.env.VITE_API_URL}/compras/`),
+          axios.get(`${import.meta.env.VITE_API_URL}/productos/`),
+          axios.get(`${import.meta.env.VITE_API_URL}/clientes/`),
+          axios.get(`${import.meta.env.VITE_API_URL}/proveedores/`)
+        ])
+
+        const ventas = ventasRes.data || []
+        const compras = comprasRes.data || []
+        const productos = productosRes.data || []
+        const clientes = clientesRes.data || []
+        const proveedores = proveedoresRes.data || []
+
+        // Calcular totales
+        const totalVentas = ventas.reduce((sum: number, venta: any) => {
+          return sum + (venta.detalles?.reduce((detSum: number, det: any) => detSum + det.total, 0) || 0)
+        }, 0)
+
+        const totalCompras = compras.reduce((sum: number, compra: any) => {
+          return sum + (compra.detalles?.reduce((detSum: number, det: any) => detSum + det.total, 0) || 0)
+        }, 0)
+
+        // Productos con bajo stock (menos de 10 unidades)
+        const productosBajoStock = productos.filter((p: any) => p.stock < 10)
+
+        // Top productos por stock
+        const topProductos = productos
+          .sort((a: any, b: any) => b.stock - a.stock)
+          .slice(0, 5)
+
+        setStats({
+          totalVentas,
+          totalCompras,
+          totalProductos: productos.length,
+          totalClientes: clientes.length,
+          totalProveedores: proveedores.length,
+          ventasRecientes: ventas
+            .sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+            .slice(0, 5),
+          comprasRecientes: compras
+            .sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+            .slice(0, 5),
+          productosBajoStock,
+          topProductos
+        })
+      } catch (error) {
+        console.error("Error al cargar datos del dashboard:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency: 'PEN'
+    }).format(amount)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const dashboardStats = [
     {
-      title: "Ingresos Totales",
-      value: "$45,231.89",
-      change: "+20.1%",
-      icon: DollarSign,
+      title: "Ventas Totales",
+      value: formatCurrency(stats.totalVentas),
+      
+      icon: TrendingUp,
+      color: "text-green-600",
+      bgColor: "bg-green-50"
     },
     {
-      title: "Usuarios Activos",
-      value: "2,350",
-      change: "+180.1%",
+      title: "Compras Totales",
+      value: formatCurrency(stats.totalCompras),
+      
+      icon: ShoppingCart,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Productos",
+      value: stats.totalProductos.toString(),
+      change: `${stats.productosBajoStock.length} bajo stock`,
+      icon: Package,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
+    },
+    {
+      title: "Clientes",
+      value: stats.totalClientes.toString(),
+      change: "activos",
       icon: Users,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
     },
     {
-      title: "Ventas",
-      value: "+12,234",
-      change: "+19%",
-      icon: BarChart3,
-    },
-    {
-      title: "Actividad",
-      value: "+573",
-      change: "+201",
-      icon: Activity,
-    },
+      title: "Proveedores",
+      value: stats.totalProveedores.toString(),
+      change: "registrados",
+      icon: Truck,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50"
+    }
   ]
 
-  const activities = [
-    {
-      user: "Ana García",
-      action: "creó un nuevo proyecto",
-      time: "hace 2 minutos",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      user: "Carlos López",
-      action: "actualizó el dashboard",
-      time: "hace 15 minutos",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      user: "María Rodríguez",
-      action: "completó una tarea",
-      time: "hace 1 hora",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      user: "Juan Pérez",
-      action: "añadió un comentario",
-      time: "hace 2 horas",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-  ]
-
-  const projects = [
-    {
-      name: "Rediseño Web",
-      progress: 75,
-      status: "En progreso",
-      team: 4,
-      deadline: "15 Dic",
-    },
-    {
-      name: "App Mobile",
-      progress: 45,
-      status: "En desarrollo",
-      team: 6,
-      deadline: "28 Dic",
-    },
-    {
-      name: "Dashboard Analytics",
-      progress: 90,
-      status: "Casi completo",
-      team: 3,
-      deadline: "10 Dic",
-    },
-  ]
-
-  const messages = [
-    {
-      from: "Equipo de Desarrollo",
-      subject: "Actualización del sistema",
-      preview: "Nueva versión disponible con mejoras...",
-      time: "10:30 AM",
-      unread: true,
-    },
-    {
-      from: "Ana García",
-      subject: "Revisión del proyecto",
-      preview: "He revisado los cambios propuestos...",
-      time: "9:15 AM",
-      unread: true,
-    },
-    {
-      from: "Soporte Técnico",
-      subject: "Mantenimiento programado",
-      preview: "El mantenimiento se realizará el...",
-      time: "Ayer",
-      unread: false,
-    },
-  ]
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2">Cargando dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Bienvenido de vuelta. Aquí tienes un resumen de tu actividad.</p>
+
+      {/* Resumen Financiero */}
+      <div className="grid gap-4 md:grid-cols-1">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Resumen Financiero
+            </CardTitle>
+            <CardDescription>Análisis de ingresos y gastos</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium">Ingresos (Ventas)</span>
+                </div>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(stats.totalVentas)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Total de ventas realizadas
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">Gastos (Compras)</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(stats.totalCompras)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Total de compras realizadas
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-medium">Balance</span>
+                </div>
+                <p className={`text-2xl font-bold ${stats.totalVentas - stats.totalCompras >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(stats.totalVentas - stats.totalCompras)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {stats.totalVentas - stats.totalCompras >= 0 ? 'Ganancia neta' : 'Pérdida neta'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Separator />
-
-      {/* Panel de estadísticas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
+      {/* Panel de estadísticas principales */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {dashboardStats.map((stat, index) => (
+          <Card key={index} className={`${stat.bgColor}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
+              <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
               <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">{stat.change}</span> desde el mes pasado
+                <span className={stat.color}>{stat.change}</span>
               </p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Proyectos + Actividad */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Proyectos Activos
-              </CardTitle>
-              <CardDescription>Estado actual de los proyectos en curso</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {projects.map((project, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">{project.name}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Users className="h-3 w-3" />
-                          {project.team} miembros
-                          <Calendar className="h-3 w-3 ml-2" />
-                          {project.deadline}
-                        </div>
-                      </div>
-                      <Badge variant="outline">{project.status}</Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>Progreso</span>
-                        <span>{project.progress}%</span>
-                      </div>
-                      <Progress value={project.progress} className="h-2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Actividad Reciente
-              </CardTitle>
-              <CardDescription>Últimas acciones realizadas en el sistema</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {activities.map((activity, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={activity.avatar} />
-                      <AvatarFallback>
-                        {activity.user.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm">
-                        <span className="font-medium">{activity.user}</span> {activity.action}
-                      </p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Mensajes */}
-      <div className="grid gap-4 md:grid-cols-1">
+      {/* Ventas Recientes, Compras y Notificaciones */}
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Mensajes
-              <Badge variant="destructive" className="ml-auto">2</Badge>
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              Ventas Recientes
             </CardTitle>
-            <CardDescription>Mensajes y notificaciones recientes</CardDescription>
+            <CardDescription>Últimas ventas registradas</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {messages.map((message, index) => (
-                <div key={index} className={`p-3 rounded-lg border ${message.unread ? "bg-muted/50" : ""}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
+            <div className="space-y-4">
+              {stats.ventasRecientes.length > 0 ? (
+                stats.ventasRecientes.map((venta, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{message.from}</p>
-                        {message.unread && <div className="h-2 w-2 bg-blue-600 rounded-full"></div>}
+                        <Badge variant="outline">#{venta.orden_venta}</Badge>
+                        <span className="text-sm font-medium">
+                          {venta.cliente?.nombre || "Cliente no especificado"}
+                        </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">{message.subject}</p>
-                      <p className="text-xs text-muted-foreground">{message.preview}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {venta.detalles?.length || 0} productos
+                      </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">{message.time}</span>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        {formatCurrency(venta.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(venta.fecha)}
+                      </p>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  No hay ventas recientes
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-blue-600" />
+              Compras
+            </CardTitle>
+            <CardDescription>Últimas compras registradas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.comprasRecientes.length > 0 ? (
+                stats.comprasRecientes.map((compra, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">#{compra.orden_compra}</Badge>
+                        <span className="text-sm font-medium">
+                          {compra.proveedor?.nombre || "Proveedor no especificado"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {compra.detalles?.length || 0} productos
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        {formatCurrency(compra.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(compra.fecha)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  No hay compras recientes
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-red-600" />
+              Notificaciones
+            </CardTitle>
+            <CardDescription>Alertas del sistema</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.productosBajoStock.length > 0 ? (
+                stats.productosBajoStock.map((producto, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 rounded-lg border border-red-200 bg-red-50">
+                    <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                      <Package className="h-4 w-4 text-red-600" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium">{producto.nombre}</p>
+                      <p className="text-xs text-red-600">
+                        Solo {producto.stock} unidades restantes
+                      </p>
+                    </div>
+                    <Badge variant="destructive">{producto.stock}</Badge>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
+                    <Package className="h-4 w-4 text-green-600" />
+                  </div>
+                  <p className="text-sm font-medium text-green-600">Sin alertas</p>
+                  <p className="text-xs text-muted-foreground">
+                    Todo funcionando correctamente
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
+      
     </div>
   )
 }

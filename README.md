@@ -1,39 +1,68 @@
 ```sql
-
-CREATE TABLE clientes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    correo VARCHAR(100),
-    telefono VARCHAR(20),
-    direccion VARCHAR(100),    
-    is_active tinyint(1) default 1 NULL,
-    documento VARCHAR(50),
-	tipoDocumento VARCHAR(50) NOT NULL default 'DNI'
+create table clientes
+(
+    id            int auto_increment
+        primary key,
+    nombre        varchar(100)              not null,
+    correo        varchar(100)              null,
+    telefono      varchar(20)               null,
+    direccion     varchar(100)              null,
+    is_active     tinyint(1)  default 1     null,
+    documento     varchar(50)               null,
+    tipoDocumento varchar(50) default 'DNI' not null
 );
 
-CREATE TABLE proveedores (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    correo VARCHAR(100),
-    telefono VARCHAR(20),
-    direccion VARCHAR(100),    
-    is_active tinyint(1) default 1 NULL,
-    documento VARCHAR(50),
-	tipoDocumento VARCHAR(50) NOT NULL default 'RUC'
+create table proveedores
+(
+    id            int auto_increment
+        primary key,
+    nombre        varchar(100)              not null,
+    correo        varchar(100)              null,
+    telefono      varchar(20)               null,
+    direccion     varchar(100)              null,
+    is_active     tinyint(1)  default 1     null,
+    documento     varchar(50)               null,
+    tipoDocumento varchar(50) default 'RUC' not null
 );
 
-CREATE TABLE productos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    descripcion TEXT,
-    precio_compra DECIMAL(10, 2),
-    precio_venta DECIMAL(10, 2),
-    stock INT,
-    tUnidad INT,
-    fechaIngreso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_active TINYINT(1) DEFAULT 1,
-    imagen VARCHAR(255),
-    FOREIGN KEY (tUnidad) REFERENCES tUnidad(id)
+create table compras
+(
+    id           int auto_increment
+        primary key,
+    proveedor_id int                                 not null,
+    fecha        timestamp default CURRENT_TIMESTAMP null,
+    orden_compra varchar(20)                         null,
+    constraint orden_compra
+        unique (orden_compra),
+    constraint compras_ibfk_1
+        foreign key (proveedor_id) references proveedores (id)
+);
+
+create index proveedor_id
+    on compras (proveedor_id);
+
+create table tunidad
+(
+    id     int auto_increment
+        primary key,
+    nombre varchar(100) not null
+);
+
+create table productos
+(
+    id            int auto_increment
+        primary key,
+    nombre        varchar(100)                         not null,
+    descripcion   text                                 null,
+    precio_compra decimal(10, 2)                       null,
+    precio_venta  decimal(10, 2)                       null,
+    stock         int                                  null,
+    tUnidad       int                                  null,
+    fechaIngreso  timestamp  default CURRENT_TIMESTAMP null,
+    is_active     tinyint(1) default 1                 null,
+    imagen        varchar(255)                         null,
+    constraint productos_ibfk_1
+        foreign key (tUnidad) references tunidad (id)
 );
 
 CREATE TABLE tUnidad (
@@ -47,6 +76,17 @@ CREATE TABLE proveedor_producto (
     producto_id INT NOT NULL,
     FOREIGN KEY (proveedor_id) REFERENCES Proveedores(id),
     FOREIGN KEY (producto_id) REFERENCES Productos(id) 
+);
+
+CREATE TABLE clientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    correo VARCHAR(100),
+    telefono VARCHAR(20),
+    direccion VARCHAR(100),    
+    is_active tinyint(1) default 1 NULL,
+    documento VARCHAR(50),
+	tipoDocumento VARCHAR(50) NOT NULL default 'RUC'
 );
 
 CREATE TABLE compras (
@@ -68,22 +108,43 @@ CREATE TABLE detalle_compra (
     FOREIGN KEY (producto_id) REFERENCES productos(id)
 );
 
-CREATE TABLE ventas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    cliente_id INT NOT NULL,
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-    orden_venta VARCHAR(20) UNIQUE
+create table ventas
+(
+    id          int auto_increment
+        primary key,
+    cliente_id  int                                 not null,
+    fecha       timestamp default CURRENT_TIMESTAMP null,
+    orden_venta varchar(20)                         null,
+    constraint orden_venta
+        unique (orden_venta),
+    constraint ventas_ibfk_1
+        foreign key (cliente_id) references clientes (id)
 );
 
-CREATE TABLE detalle_venta (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    venta_id INT NOT NULL,
-    producto_id INT NOT NULL,
-    cantidad INT NOT NULL,
-    precio_unitario DECIMAL(10, 2) NOT NULL,
-    total DECIMAL(10,2) GENERATED ALWAYS AS (cantidad * precio_unitario) STORED,
-    FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE CASCADE,
-    FOREIGN KEY (producto_id) REFERENCES productos(id)
+create table detalle_venta
+(
+    id              int auto_increment
+        primary key,
+    venta_id        int            not null,
+    producto_id     int            not null,
+    cantidad        int            not null,
+    precio_unitario decimal(10, 2) not null,
+    total           decimal(10, 2) as ((`cantidad` * `precio_unitario`)) stored,
+    constraint detalle_venta_ibfk_1
+        foreign key (venta_id) references ventas (id)
+            on delete cascade,
+    constraint detalle_venta_ibfk_2
+        foreign key (producto_id) references productos (id)
 );
+
+create index producto_id
+    on detalle_venta (producto_id);
+
+create index venta_id
+    on detalle_venta (venta_id);
+
+create index cliente_id
+    on ventas (cliente_id);
+
+
 ```

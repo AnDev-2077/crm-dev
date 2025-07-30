@@ -19,10 +19,10 @@ type Props = {
   cliente: Cliente | null;
   vendedor: string;
   productos: Product[];
+  numeroOrden: string | null;
 };
 
-const VentaBoletaExport = ({ cliente, vendedor, productos }: Props) => {
-  const numero = Date.now().toString().slice(-6);
+const VentaBoletaExport = ({ cliente, vendedor, productos, numeroOrden }: Props) => {
   const fecha = new Date().toLocaleDateString();
 
   const totalGeneral = productos.reduce(
@@ -31,7 +31,7 @@ const VentaBoletaExport = ({ cliente, vendedor, productos }: Props) => {
   );
 
   const pdfData = {
-    numero,
+    numero: numeroOrden || "N/A",
     fecha,
     cliente: {
       nombre: cliente?.nombre || "N/A",
@@ -52,7 +52,7 @@ const VentaBoletaExport = ({ cliente, vendedor, productos }: Props) => {
       {canGenerate && (
         <PDFDownloadLink
           document={<VentaBoletaPDF {...pdfData} />}
-          fileName={`orden_venta_${cliente.nombre}_${numero}.pdf`}
+          fileName={`orden_venta_${cliente.nombre}_${numeroOrden}.pdf`}
         >
           {({ loading }) => (
             <Button

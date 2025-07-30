@@ -194,11 +194,62 @@ def crear_tipo_unidad(unidad: TUnidadCreate, db: Session = Depends(get_db), curr
     db.refresh(nueva_unidad)
     return nueva_unidad
 
+@router.delete("/tipo-unidad/{unidad_id}")
+def eliminar_unidad(unidad_id: int, db: Session = Depends(get_db)):
+    unidad = db.query(TipoUnidad).filter(TipoUnidad.id == unidad_id).first()
+    if not unidad:
+        raise HTTPException(status_code=404, detail="Unidad no encontrada")
+    db.delete(unidad)
+    db.commit()
+    return {"message": "Unidad eliminada correctamente"}
+
 #################################PROVEEDORES#################################
 
 @router.get("/proveedores/", response_model=list[ProveedorOut])
 def read_proveedores(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
     return db.query(Proveedor).all()
+
+@router.get("/proveedores/{proveedor_id}", response_model=dict)
+def obtener_proveedor(proveedor_id: int, db: Session = Depends(get_db)):
+    try:
+        proveedor = db.query(Proveedor).filter(Proveedor.id == proveedor_id).first()
+        if not proveedor:
+            raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+        
+        return {
+            "id": proveedor.id,
+            "nombre": proveedor.nombre,
+            "documento": proveedor.documento,
+            "tipoDocumento": proveedor.tipoDocumento,
+            "correo": proveedor.correo,
+            "telefono": proveedor.telefono,
+            "direccion": proveedor.direccion
+        }
+    except Exception as e:
+        print(f"Error en obtener_proveedor: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/proveedores/{proveedor_id}")
+def actualizar_proveedor(proveedor_id: int, proveedor_data: dict, db: Session = Depends(get_db)):
+    try:
+        proveedor = db.query(Proveedor).filter(Proveedor.id == proveedor_id).first()
+        if not proveedor:
+            raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+        
+        # Actualizar campos
+        proveedor.nombre = proveedor_data.get("nombre", proveedor.nombre)
+        proveedor.documento = proveedor_data.get("documento", proveedor.documento)
+        proveedor.tipoDocumento = proveedor_data.get("tipoDocumento", proveedor.tipoDocumento)
+        proveedor.correo = proveedor_data.get("correo", proveedor.correo)
+        proveedor.telefono = proveedor_data.get("telefono", proveedor.telefono)
+        proveedor.direccion = proveedor_data.get("direccion", proveedor.direccion)
+        
+        db.commit()
+        return {"message": "Proveedor actualizado correctamente"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error en actualizar_proveedor: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/proveedores/", response_model=ProveedorOut)
 def create_proveedor(proveedor: ProveedorCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
@@ -207,6 +258,7 @@ def create_proveedor(proveedor: ProveedorCreate, db: Session = Depends(get_db), 
     db.commit()
     db.refresh(db_proveedor)
     return db_proveedor
+
 ##########################CLIENTES######################################
 
 @router.get("/clientes/", response_model=list[ClienteOut])
@@ -221,6 +273,47 @@ def create_clientes(cliente: ClienteCreate, db: Session = Depends(get_db), curre
     db.refresh(db_cliente)
     return db_cliente
 
+@router.get("/clientes/{cliente_id}", response_model=dict)
+def obtener_cliente(cliente_id: int, db: Session = Depends(get_db)):
+    try:
+        cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+        if not cliente:
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+        
+        return {
+            "id": cliente.id,
+            "nombre": cliente.nombre,
+            "documento": cliente.documento,
+            "tipoDocumento": cliente.tipoDocumento,
+            "correo": cliente.correo,
+            "telefono": cliente.telefono,
+            "direccion": cliente.direccion
+        }
+    except Exception as e:
+        print(f"Error en obtener_cliente: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/clientes/{cliente_id}")
+def actualizar_cliente(cliente_id: int, cliente_data: dict, db: Session = Depends(get_db)):
+    try:
+        cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+        if not cliente:
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+        
+        # Actualizar campos
+        cliente.nombre = cliente_data.get("nombre", cliente.nombre)
+        cliente.documento = cliente_data.get("documento", cliente.documento)
+        cliente.tipoDocumento = cliente_data.get("tipoDocumento", cliente.tipoDocumento)
+        cliente.correo = cliente_data.get("correo", cliente.correo)
+        cliente.telefono = cliente_data.get("telefono", cliente.telefono)
+        cliente.direccion = cliente_data.get("direccion", cliente.direccion)
+        
+        db.commit()
+        return {"message": "Cliente actualizado correctamente"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error en actualizar_cliente: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 ###############################COMPRAS#########################################
 
 @router.post("/compras/")
@@ -276,7 +369,100 @@ def obtener_siguiente_numero(db: Session = Depends(get_db), current_user: Usuari
     return {"numero_orden": f"{numero:07d}"}
 
 
+@router.get("/compras/", response_model=List[dict])
+def listar_compras(db: Session = Depends(get_db)):
+    try:
+        compras = db.query(Compra).all()
+        
+        result = []
+        for compra in compras:
+            # Obtener proveedor
+            proveedor = db.query(Proveedor).filter(Proveedor.id == compra.proveedor_id).first()
+            
+            compra_data = {
+                "id": compra.id,
+                "orden_compra": compra.orden_compra,
+                "fecha": compra.fecha.isoformat() if compra.fecha else None,
+                "proveedor": {
+                    "id": proveedor.id if proveedor else None,
+                    "nombre": proveedor.nombre if proveedor else "N/A",
+                    "documento": proveedor.documento if proveedor else "N/A"
+                },
+                "detalles": []
+            }
+            
+            # Obtener detalles
+            detalles = db.query(DetalleCompra).filter(DetalleCompra.compra_id == compra.id).all()
+            
+            for detalle in detalles:
+                producto = db.query(Producto).filter(Producto.id == detalle.producto_id).first()
+                
+                detalle_data = {
+                    "id": detalle.id,
+                    "producto": {
+                        "id": producto.id if producto else None,
+                        "nombre": producto.nombre if producto else "N/A"
+                    },
+                    "cantidad": detalle.cantidad,
+                    "precio_unitario": float(detalle.precio_unitario),
+                    "total": float(detalle.cantidad * detalle.precio_unitario)
+                }
+                compra_data["detalles"].append(detalle_data)
+            
+            result.append(compra_data)
+        
+        return result
+    except Exception as e:
+        print(f"Error en listar_compras: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/compras/{compra_id}", response_model=dict)
+def obtener_compra(compra_id: int, db: Session = Depends(get_db)):
+    try:
+        compra = db.query(Compra).filter(Compra.id == compra_id).first()
+        if not compra:
+            raise HTTPException(status_code=404, detail="Compra no encontrada")
+        
+        # Obtener proveedor
+        proveedor = db.query(Proveedor).filter(Proveedor.id == compra.proveedor_id).first()
+        
+        compra_data = {
+            "id": compra.id,
+            "orden_compra": compra.orden_compra,
+            "fecha": compra.fecha.isoformat() if compra.fecha else None,
+            "proveedor": {
+                "id": proveedor.id if proveedor else None,
+                "nombre": proveedor.nombre if proveedor else "Sin proveedor",
+                "documento": proveedor.documento if proveedor else "N/A",
+                "correo": proveedor.correo if proveedor else "N/A",
+                "telefono": proveedor.telefono if proveedor else "N/A"
+            },
+            "detalles": []
+        }
+        
+        # Obtener detalles
+        detalles = db.query(DetalleCompra).filter(DetalleCompra.compra_id == compra.id).all()
+        
+        for detalle in detalles:
+            producto = db.query(Producto).filter(Producto.id == detalle.producto_id).first()
+            
+            detalle_data = {
+                "id": detalle.id,
+                "producto": {
+                    "id": producto.id if producto else None,
+                    "nombre": producto.nombre if producto else "Producto no encontrado"
+                },
+                "cantidad": detalle.cantidad,
+                "precio_unitario": float(detalle.precio_unitario),
+                "total": float(detalle.cantidad * detalle.precio_unitario)
+            }
+            compra_data["detalles"].append(detalle_data)
+        
+        return compra_data
+    except Exception as e:
+        print(f"Error en obtener_compra: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+        
 ##########################VENTAS##############################
 
 @router.post("/ventas/", response_model=VentaOut)
@@ -316,12 +502,100 @@ def crear_venta(venta: VentaCreate, db: Session = Depends(get_db), current_user:
 
     return nueva_venta
 
-@router.get("/ventas/", response_model=List[VentaOut])
+@router.get("/ventas/", response_model=List[dict])
 def listar_ventas(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
-    return db.query(Venta).options(joinedload(Venta.detalles)).all()
+    try:
+        ventas = db.query(Venta).all()
+        
+        result = []
+        for venta in ventas:
+            # Obtener cliente
+            cliente = db.query(Cliente).filter(Cliente.id == venta.cliente_id).first()
+            
+            venta_data = {
+                "id": venta.id,
+                "orden_venta": venta.orden_venta,
+                "fecha": venta.fecha.isoformat() if venta.fecha else None,
+                "cliente": {
+                    "id": cliente.id if cliente else None,
+                    "nombre": cliente.nombre if cliente else "Sin cliente",
+                    "documento": cliente.documento if cliente else "N/A"
+                },
+                "detalles": []
+            }
+            
+            # Obtener detalles
+            detalles = db.query(DetalleVenta).filter(DetalleVenta.venta_id == venta.id).all()
+            
+            for detalle in detalles:
+                producto = db.query(Producto).filter(Producto.id == detalle.producto_id).first()
+                
+                detalle_data = {
+                    "id": detalle.id,
+                    "producto": {
+                        "id": producto.id if producto else None,
+                        "nombre": producto.nombre if producto else "Producto no encontrado"
+                    },
+                    "cantidad": detalle.cantidad,
+                    "precio_unitario": float(detalle.precio_unitario),
+                    "total": float(detalle.cantidad * detalle.precio_unitario)
+                }
+                venta_data["detalles"].append(detalle_data)
+            
+            result.append(venta_data)
+        
+        return result
+    except Exception as e:
+        print(f"Error en listar_ventas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/ventas/siguiente-numero")
 def obtener_siguiente_numero(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
     ultima_venta = db.query(Venta).order_by(Venta.id.desc()).first()
     numero = ultima_venta.id + 1 if ultima_venta else 1
     return {"numero_orden": f"{numero:07d}"}
+
+@router.get("/ventas/{venta_id}", response_model=dict)
+def obtener_venta(venta_id: int, db: Session = Depends(get_db)):
+    try:
+        venta = db.query(Venta).filter(Venta.id == venta_id).first()
+        if not venta:
+            raise HTTPException(status_code=404, detail="Venta no encontrada")
+        
+        # Obtener cliente
+        cliente = db.query(Cliente).filter(Cliente.id == venta.cliente_id).first()
+        
+        venta_data = {
+            "id": venta.id,
+            "orden_venta": venta.orden_venta,
+            "fecha": venta.fecha.isoformat() if venta.fecha else None,
+            "cliente": {
+                "id": cliente.id if cliente else None,
+                "nombre": cliente.nombre if cliente else "Sin cliente",
+                "documento": cliente.documento if cliente else "N/A"
+            },
+            "detalles": []
+        }
+        
+        # Obtener detalles
+        detalles = db.query(DetalleVenta).filter(DetalleVenta.venta_id == venta.id).all()
+        
+        for detalle in detalles:
+            producto = db.query(Producto).filter(Producto.id == detalle.producto_id).first()
+            
+            detalle_data = {
+                "id": detalle.id,
+                "producto": {
+                    "id": producto.id if producto else None,
+                    "nombre": producto.nombre if producto else "Producto no encontrado"
+                },
+                "cantidad": detalle.cantidad,
+                "precio_unitario": float(detalle.precio_unitario),
+                "total": float(detalle.cantidad * detalle.precio_unitario)
+            }
+            venta_data["detalles"].append(detalle_data)
+        
+        return venta_data
+    except Exception as e:
+        print(f"Error en obtener_venta: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

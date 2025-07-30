@@ -55,6 +55,15 @@ export default function SalesView() {
   const [loadingVenta, setLoadingVenta] = useState(false)
   const [numeroOrden, setNumeroOrden] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<string>("")
+  // Agregar estados para controlar la venta guardada y la carga
+  const [ventaGuardada, setVentaGuardada] = useState(false);
+  // Estado para los datos de la venta registrada
+  const [ventaParaPDF, setVentaParaPDF] = useState<{
+    cliente: { nombre: string; documento: string };
+    vendedor: string;
+    productos: { nombre: string; cantidad: number; precio: number }[];
+    numeroOrden: string | null;
+  } | null>(null);
 
 useEffect(() => {
   const fetchNumeroOrden = async () => {
@@ -75,6 +84,7 @@ useEffect(() => {
   if (!clienteSeleccionado || productosVenta.length === 0) return;
 
   setLoadingVenta(true);
+  setVentaGuardada(false);
   try {
     const payload = {
       cliente_id: parseInt(clienteSeleccionado),
@@ -88,12 +98,35 @@ useEffect(() => {
     const res = await axios.post("http://localhost:8000/ventas/", payload);
     console.log("Venta creada:", res.data);
 
+    // Guardar datos para el PDF antes de limpiar
+    setVentaParaPDF({
+      cliente: {
+        nombre: clienteSeleccionadoData?.nombre || "N/A",
+        documento: clienteSeleccionadoData?.documento || "00000000",
+      },
+      vendedor: "Trabajador 1",
+      productos: productosVenta
+        .filter((p) => p.cantidad > 0)
+        .map((p) => {
+          const prod = productos.find((prod) => prod.id === p.id);
+          if (!prod) return null;
+          return {
+            nombre: prod.nombre,
+            cantidad: p.cantidad,
+            precio: p.precio,
+          };
+        })
+        .filter((p): p is { nombre: string; cantidad: number; precio: number } => p !== null),
+      numeroOrden: numeroOrden,
+    });
+
     await fetchProductos();
     await fetchNumeroOrden();
 
-    setProductosVenta([]);
-    setClienteSeleccionado("");
-    alert(" Venta registrada correctamente");
+    setVentaGuardada(true);
+    // No vaciar los campos aquí
+    // setProductosVenta([]);
+    // setClienteSeleccionado("");
   } catch (err) {
     console.error(" Error al registrar la venta:", err);
     alert(" Error al registrar la venta");
@@ -209,6 +242,13 @@ useEffect(() => {
 
   const clienteSeleccionadoData = clientes.find((c) => c.id.toString() === clienteSeleccionado)
 
+  // En el handler de selección de cliente, limpia ventaParaPDF
+  const handleSeleccionarCliente = (currentValue: string) => {
+    setClienteSeleccionado(currentValue === clienteSeleccionado ? "" : currentValue);
+    setVentaParaPDF(null); // Oculta el botón de exportar PDF al iniciar nueva venta
+    setOpenCombobox(false);
+  };
+
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -269,12 +309,7 @@ useEffect(() => {
                       <CommandItem
                         key={cliente.id}
                         value={cliente.id.toString()}
-                        onSelect={(currentValue) => {
-                          setClienteSeleccionado(
-                            currentValue === clienteSeleccionado ? "" : currentValue
-                          )
-                          setOpenCombobox(false)
-                        }}
+                        onSelect={(currentValue) => handleSeleccionarCliente(currentValue)}
                         className="py-2 text-base"
                       >
                         <Check
@@ -326,7 +361,7 @@ useEffect(() => {
                       <TableHead>Tipo de unidad</TableHead>
                       <TableHead>Precio</TableHead>
                       <TableHead>Stock</TableHead>
-                      <TableHead className="text-right">Cantidad</TableHead>
+                      <TableHead className="text-center">Cantidad</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -360,13 +395,13 @@ useEffect(() => {
                                 {producto.stock} unidades
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-2">
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => quitarProducto(producto.id)}
-                                  disabled={!enVenta}
+                                  onClick={() => enVenta && enVenta.cantidad > 0 && quitarProducto(producto.id)}
+                                  disabled={!enVenta || enVenta.cantidad === 0}
                                 >
                                   <Minus className="h-3 w-3" />
                                 </Button>
@@ -374,10 +409,17 @@ useEffect(() => {
                                   type="number"
                                   min="0"
                                   max={producto.stock}
-                                  value={enVenta?.cantidad || 0}
+                                  value={enVenta ? enVenta.cantidad.toString() : "0"}
                                   onChange={(e) => {
-                                    const valor = parseInt(e.target.value) || 0
-                                    if (valor <= producto.stock) actualizarCantidad(producto.id, valor)
+                                    const valor = e.target.value;
+                                    if (valor === "") {
+                                      actualizarCantidad(producto.id, 0); 
+                                      return;
+                                    }
+                                    let num = parseInt(valor, 10);
+                                    if (isNaN(num) || num < 0) num = 0;
+                                    if (num > producto.stock) num = producto.stock;
+                                    actualizarCantidad(producto.id, num);
                                   }}
                                   className="w-16 text-center"
                                 />
@@ -458,6 +500,7 @@ useEffect(() => {
                             variant="ghost"
                             onClick={() => eliminarProducto(producto.id)}
                             className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            disabled={productosVenta.find((p) => p.id === producto.id) === undefined}
                           >
                             ×
                           </Button>
@@ -476,7 +519,7 @@ useEffect(() => {
                     <span className="text-lg">S/. {calcularTotal()}</span>
                   </div>
                   <Separator />
-                  <div className="space-y-2">
+                  {!ventaParaPDF ? (
                     <Button
                       className="w-full"
                       onClick={generarVenta}
@@ -484,23 +527,30 @@ useEffect(() => {
                     >
                       {loadingVenta ? "Registrando..." : "Generar Venta"}
                     </Button>
-                  </div>
+                  ) : (
+                    <VentaBoletaExport
+                      key={ventaParaPDF.productos.map(p => p.nombre).join('-') + ventaParaPDF.productos.length}
+                      cliente={ventaParaPDF.cliente}
+                      vendedor={ventaParaPDF.vendedor}
+                      productos={ventaParaPDF.productos}
+                      numeroOrden={ventaParaPDF.numeroOrden}
+                    />
+                  )}
                 </>
               )}
+              {ventaParaPDF && (
+                <Button
+                  className="w-full mt-2"
+                  onClick={() => {
+                    setProductosVenta([]);
+                    setClienteSeleccionado("");
+                    setVentaParaPDF(null);
+                  }}
+                >
+                  Nueva venta
+                </Button>
+              )}
               </div>
-              {/* PDF Exportación */}
-              <VentaBoletaExport
-                cliente={{
-                  nombre: clienteSeleccionadoData?.nombre || "N/A",
-                  documento: clienteSeleccionadoData?.documento || "00000000",
-                }}
-                vendedor="Trabajador 1"
-                productos={productosVenta.map((p) => ({
-                  nombre: productos.find((prod) => prod.id === p.id)?.nombre || "Producto desconocido",
-                  cantidad: p.cantidad,
-                  precio: p.precio,
-                }))}
-              />
             </CardContent>
           </Card>
         </div>

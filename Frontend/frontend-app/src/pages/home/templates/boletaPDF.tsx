@@ -5,46 +5,131 @@
     Text,
     View,
     StyleSheet,
-    Font,
+    Image,
   } from "@react-pdf/renderer";
   import BoletaExport from "./boletaExport";
 
   const styles = StyleSheet.create({
     page: {
-      padding: 20,
+      padding: 18,
       fontSize: 10,
       fontFamily: "Helvetica",
+      backgroundColor: "#fff",
     },
     header: {
-      textAlign: "center",
-      marginBottom: 10,
-    },
-    section: {
-      marginBottom: 10,
-    },
-    bold: {
-      fontWeight: "bold",
-    },
-    line: {
-      borderBottom: "1px solid #000",
-      marginVertical: 5,
-    },
-    productRow: {
       flexDirection: "row",
       justifyContent: "space-between",
-      marginBottom: 3,
+      alignItems: "flex-start",
+      marginBottom: 4,
     },
-    total: {
-      textAlign: "right",
-      marginTop: 10,
-      fontSize: 12,
+    logoBox: {
+      width: 90,
+      height: 40,
+      marginRight: 8,
+    },
+    companyInfo: {
+      flex: 1,
+      fontSize: 8,
+      color: "#000",
+      marginBottom: 2,
+    },
+    rucBox: {
+      border: "1pt solid #000",
+      padding: 4,
+      alignItems: "center",
+      backgroundColor: "#fff",
+      marginBottom: 2,
+    },
+    rucText: {
+      color: "#000",
       fontWeight: "bold",
+      fontSize: 10,
+    },
+    boletaBox: {
+      border: "1pt solid #000",
+      padding: 4,
+      alignItems: "center",
+      backgroundColor: "#fff",
+      marginBottom: 2,
+    },
+    boletaTitle: {
+      color: "#000",
+      fontWeight: "bold",
+      fontSize: 10,
+    },
+    boletaNum: {
+      color: "#d00",
+      fontWeight: "bold",
+      fontSize: 12,
+      marginTop: 2,
+    },
+    section: {
+      marginBottom: 6,
+    },
+    label: {
+      fontWeight: "bold",
+      fontSize: 9,
+      color: "#000",
+    },
+    table: {
+      border: "1pt solid #000",
+      marginTop: 4,
+      marginBottom: 4,
+    },
+    tableRow: {
+      flexDirection: "row",
+      borderBottom: "1pt solid #000",
+      alignItems: "center",
+      minHeight: 16,
+    },
+    tableHeader: {
+      backgroundColor: "#eee",
+      fontWeight: "bold",
+      color: "#000",
+      fontSize: 9,
+    },
+    cellCant: {
+      width: 40,
+      padding: 2,
+      textAlign: "center",
+      color: "#000",
+    },
+    cellDesc: {
+      flex: 1,
+      padding: 2,
+      color: "#000",
+    },
+    cellImporte: {
+      width: 60,
+      padding: 2,
+      textAlign: "right",
+      color: "#000",
+    },
+    totalBox: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
+      marginTop: 8,
+      border: "1pt solid #000",
+      padding: 4,
+      backgroundColor: "#fff",
+    },
+    totalLabel: {
+      fontWeight: "bold",
+      color: "#000",
+      fontSize: 10,
+      marginRight: 8,
+    },
+    totalValue: {
+      fontWeight: "bold",
+      fontSize: 12,
+      color: "#000",
     },
   });
 
   type Product = {
     nombre: string;
-    unidad: string;
+    unidad?: string;
     cantidad: number;
     precio: number;
     total: number;
@@ -53,50 +138,86 @@
   type Props = {
     numero: string;
     fecha: string;
-    proveedor: {
+    proveedor?: {
       nombre: string;
-      contacto: string;
-      telefono: string;
+      contacto?: string;
+      telefono?: string;
+    };
+    cliente?: {
+      nombre: string;
+      documento: string;
+      tipoDocumento?: string;
+      direccion?: string;
     };
     productos: Product[];
     totalGeneral: number;
   };
 
-  const BoletaPDF = ({ numero, fecha, proveedor, productos, totalGeneral }: Props) => (
+  const BoletaPDF = ({
+    numero,
+    fecha,
+    proveedor,
+    cliente,
+    productos,
+    totalGeneral,
+  }: Props) => (
     <Document>
       <Page size="A5" style={styles.page}>
+        {/* Encabezado con logo y datos empresa */}
         <View style={styles.header}>
-          <Text style={{ fontSize: 14, fontWeight: "bold" }}>BOLETA DE COMPRA</Text>
-          <Text>#{numero}</Text>
-          <Text>{fecha}</Text>
+          {/* Logo en la parte superior izquierda (cambia la ruta por tu logo real) */}
+          <Image src="/logo.png" style={styles.logoBox} />
+          <View style={styles.companyInfo}>
+            <Text style={{ fontWeight: "bold", color: "#000", fontSize: 12 }}>DISTRIBUCIONES ADISAN</Text>
+            <Text style={{ color: "#000" }}>Av Tacabamba 766 - Chota - Cajamarca</Text>
+            <Text style={{ color: "#000" }}>Telefono: 976667504</Text>
+            <Text style={{ color: "#000" }}>Email: distribucionesadisan@gmail.com</Text>
+          </View>
+          <View>
+            <View style={styles.rucBox}>
+              <Text style={styles.rucText}>R.U.C. ########</Text>
+            </View>
+            <View style={styles.boletaBox}>
+              <Text style={styles.boletaTitle}>BOLETA DE COMPRA</Text>
+              <Text style={styles.boletaNum}>N° {numero}</Text> {/* Solo este en rojo */}
+            </View>
+          </View>
         </View>
 
+        {/* Datos de la venta */}
         <View style={styles.section}>
-          <Text style={styles.bold}>PROVEEDOR:</Text>
-          <Text>{proveedor.nombre}</Text>
-          <Text>Contacto: {proveedor.contacto}</Text>
-          <Text>Tel: {proveedor.telefono}</Text>
+          <Text>Fecha: {fecha}</Text>
+          <Text>Proveedor: {cliente?.nombre || proveedor?.nombre || "-"}</Text>
+          <Text>
+            {cliente?.tipoDocumento ? `${cliente.tipoDocumento}: ` : ""}
+            {cliente?.documento || "-"}
+          </Text>
+          {cliente?.direccion && <Text>Dirección: {cliente.direccion}</Text>}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.bold}>PRODUCTOS:</Text>
-          {productos.map((prod, index) => (
-            <View key={index}>
-              <View style={styles.productRow}>
-                <Text>{prod.nombre}</Text>
-                <Text>s/.{prod.precio}</Text>
-              </View>
-              <Text>
-                {prod.cantidad} {prod.unidad} - Total: S/. {prod.total.toFixed(2)}
-              </Text>
+        {/* Tabla de productos */}
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]}>
+            <Text style={styles.cellCant}>CANT.</Text>
+            <Text style={styles.cellDesc}>DESCRIPCIÓN</Text>
+            <Text style={styles.cellImporte}>IMPORTE</Text>
+          </View>
+          {productos.map((prod, idx) => (
+            <View style={styles.tableRow} key={idx}>
+              <Text style={styles.cellCant}>{prod.cantidad}</Text>
+              <Text style={styles.cellDesc}>{prod.nombre}</Text>
+              <Text style={styles.cellImporte}>S/. {prod.total.toFixed(2)}</Text>
             </View>
           ))}
         </View>
 
-        <Text style={styles.total}>TOTAL GENERAL: S/. {totalGeneral.toFixed(2)}</Text>
+        {/* Total al pie */}
+        <View style={styles.totalBox}>
+          <Text style={styles.totalLabel}>TOTAL S/.</Text>
+          <Text style={styles.totalValue}>{totalGeneral.toFixed(2)}</Text>
+        </View>
       </Page>
     </Document>
-    
   );
 
   export default BoletaPDF;
