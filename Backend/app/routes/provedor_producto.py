@@ -1,11 +1,10 @@
 from ast import List
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session, joinedload
-from ..database import SessionLocal, get_db
+from ..database import SessionLocal
 from ..models.productos import Producto
 from ..models.proveedores import Proveedor
 from ..models.clientes import Cliente
-from ..models.usuario import Usuario
 from ..schemas.proveedores_schema import ProveedorCreate, ProveedorOut
 from ..schemas.clientes_schema import ClienteCreate, ClienteOut
 from ..schemas.producto_schema import ProductOut, ProductCreate, ProductoSchema
@@ -22,23 +21,15 @@ from ..models.compra import DetalleCompra
 from sqlalchemy import func
 from ..models.ventas import Venta, DetalleVenta
 from ..schemas.ventas_schema import VentaCreate, VentaOut
-from ..routes.auth import get_current_user
 
 router = APIRouter()
 
-# Funciones de control de roles
-def require_admin(current_user: Usuario = Depends(get_current_user)):
-    """Requiere que el usuario sea administrador"""
-    if current_user.rol != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acceso denegado: Se requieren permisos de administrador"
-        )
-    return current_user
-
-def require_authenticated(current_user: Usuario = Depends(get_current_user)):
-    """Requiere que el usuario esté autenticado"""
-    return current_user
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 IMAGES_DIR = BASE_DIR / "images"
@@ -47,7 +38,7 @@ IMAGES_DIR.mkdir(exist_ok=True)
 #################################PRODUCTOS#################################
 
 @router.get("/productos/", response_model=List[ProductOut])
-def get_productos(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def get_productos(db: Session = Depends(get_db)):
     productos = db.query(Producto).options(
         joinedload(Producto.tipo_unidad),
         joinedload(Producto.proveedores)
@@ -55,7 +46,7 @@ def get_productos(db: Session = Depends(get_db), current_user: Usuario = Depends
     return productos
 
 @router.get("/productos/{producto_id}", response_model=ProductOut)
-def get_producto(producto_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def get_producto(producto_id: int, db: Session = Depends(get_db)):
     producto = (
         db.query(Producto)
         .options(joinedload(Producto.tipo_unidad), joinedload(Producto.proveedores))
@@ -76,8 +67,7 @@ async def create_producto(
     tUnidad: int = Form(None), 
     proveedor_id: int = Form(None),
     imagen: UploadFile = File(None),
-    db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_admin)
+    db: Session = Depends(get_db)
 ):
     producto_data = {
         "nombre": nombre,
@@ -129,8 +119,7 @@ async def update_producto(
     tUnidad: int = Form(None), 
     proveedor_id: int = Form(None),
     imagen: UploadFile = File(None),
-    db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_admin)
+    db: Session = Depends(get_db)
 ):
     producto = db.query(Producto).filter(Producto.id == producto_id).first()
     if not producto:
@@ -170,7 +159,7 @@ async def update_producto(
     return producto
 
 @router.get("/productos/proveedor/{proveedor_id}", response_model=List[ProductOut])
-def get_productos_por_proveedor(proveedor_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def get_productos_por_proveedor(proveedor_id: int, db: Session = Depends(get_db)):
     productos = (
         db.query(Producto)
         .options(joinedload(Producto.tipo_unidad), joinedload(Producto.proveedores))
@@ -183,11 +172,11 @@ def get_productos_por_proveedor(proveedor_id: int, db: Session = Depends(get_db)
 #################################TIPO UNIDAD#################################
 
 @router.get("/tipo-unidad/", response_model=list[TUnidadOut])
-def get_unidades(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def get_unidades(db: Session = Depends(get_db)):
     return db.query(TipoUnidad).all()
 
 @router.post("/tipo-unidad/")
-def crear_tipo_unidad(unidad: TUnidadCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
+def crear_tipo_unidad(unidad: TUnidadCreate, db: Session = Depends(get_db)):
     nueva_unidad = TipoUnidad(nombre=unidad.nombre)
     db.add(nueva_unidad)
     db.commit()
@@ -206,7 +195,7 @@ def eliminar_unidad(unidad_id: int, db: Session = Depends(get_db)):
 #################################PROVEEDORES#################################
 
 @router.get("/proveedores/", response_model=list[ProveedorOut])
-def read_proveedores(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def read_proveedores(db: Session = Depends(get_db)):
     return db.query(Proveedor).all()
 
 @router.get("/proveedores/{proveedor_id}", response_model=dict)
@@ -252,7 +241,7 @@ def actualizar_proveedor(proveedor_id: int, proveedor_data: dict, db: Session = 
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/proveedores/", response_model=ProveedorOut)
-def create_proveedor(proveedor: ProveedorCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
+def create_proveedor(proveedor: ProveedorCreate, db: Session = Depends(get_db)):
     db_proveedor = Proveedor(**proveedor.dict())
     db.add(db_proveedor)
     db.commit()
@@ -262,11 +251,11 @@ def create_proveedor(proveedor: ProveedorCreate, db: Session = Depends(get_db), 
 ##########################CLIENTES######################################
 
 @router.get("/clientes/", response_model=list[ClienteOut])
-def read_clientes(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def read_clientes(db: Session = Depends(get_db)):
     return db.query(Cliente).all()
 
 @router.post("/clientes/", response_model=ClienteOut)
-def create_clientes(cliente: ClienteCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def create_clientes(cliente: ClienteCreate, db: Session = Depends(get_db)):
     db_cliente = Cliente(**cliente.dict())
     db.add(db_cliente)
     db.commit()
@@ -317,7 +306,7 @@ def actualizar_cliente(cliente_id: int, cliente_data: dict, db: Session = Depend
 ###############################COMPRAS#########################################
 
 @router.post("/compras/")
-def crear_compra(compra: CompraCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
+def crear_compra(compra: CompraCreate, db: Session = Depends(get_db)):
 
     ultimo_orden = db.query(func.max(Compra.orden_compra)).scalar()
     if ultimo_orden and ultimo_orden.isdigit():
@@ -363,7 +352,7 @@ def crear_compra(compra: CompraCreate, db: Session = Depends(get_db), current_us
     }
 
 @router.get("/compras/siguiente-numero")
-def obtener_siguiente_numero(db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
+def obtener_siguiente_numero(db: Session = Depends(get_db)):
     ultima_compra = db.query(Compra).order_by(Compra.id.desc()).first()
     numero = ultima_compra.id + 1 if ultima_compra else 1
     return {"numero_orden": f"{numero:07d}"}
@@ -466,7 +455,7 @@ def obtener_compra(compra_id: int, db: Session = Depends(get_db)):
 ##########################VENTAS##############################
 
 @router.post("/ventas/", response_model=VentaOut)
-def crear_venta(venta: VentaCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def crear_venta(venta: VentaCreate, db: Session = Depends(get_db)):
     # Obtener el último número de orden registrado
     ultimo_orden = db.query(func.max(Venta.orden_venta)).scalar()
     if ultimo_orden and ultimo_orden.isdigit():
@@ -503,7 +492,7 @@ def crear_venta(venta: VentaCreate, db: Session = Depends(get_db), current_user:
     return nueva_venta
 
 @router.get("/ventas/", response_model=List[dict])
-def listar_ventas(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def listar_ventas(db: Session = Depends(get_db)):
     try:
         ventas = db.query(Venta).all()
         
@@ -550,7 +539,7 @@ def listar_ventas(db: Session = Depends(get_db), current_user: Usuario = Depends
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/ventas/siguiente-numero")
-def obtener_siguiente_numero(db: Session = Depends(get_db), current_user: Usuario = Depends(require_authenticated)):
+def obtener_siguiente_numero(db: Session = Depends(get_db)):
     ultima_venta = db.query(Venta).order_by(Venta.id.desc()).first()
     numero = ultima_venta.id + 1 if ultima_venta else 1
     return {"numero_orden": f"{numero:07d}"}

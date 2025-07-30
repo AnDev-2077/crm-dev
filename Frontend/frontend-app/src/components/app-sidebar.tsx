@@ -104,12 +104,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: PackageSearch,
           isActive: false,
         },
-        {
-          title: "Kardex",
-          url: "/home/kardex-panel",
-          icon: PackageSearch,
-          isActive: false,
-        },
+        
       ],
     },
     {
@@ -138,23 +133,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
-    {
-      title: "Sistema",
-      items: [
-        {
-          title: "Notificaciones",
-          url: "#",
-          icon: Bell,
-          isActive: false,
-        },
-        {
-          title: "Configuración",
-          url: "#",
-          icon: Settings,
-          isActive: false,
-        },
-      ],
-    },  ]
+      ]
   return (
     <Sidebar side="left" {...props}>
       <SidebarHeader>
