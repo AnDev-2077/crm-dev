@@ -304,6 +304,7 @@ def actualizar_cliente(cliente_id: int, cliente_data: dict, db: Session = Depend
         db.rollback()
         print(f"Error en actualizar_cliente: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 ###############################COMPRAS#########################################
 
 @router.post("/compras/")
@@ -366,7 +367,7 @@ def listar_compras(db: Session = Depends(get_db)):
         
         result = []
         for compra in compras:
-            # Obtener proveedor
+           
             proveedor = db.query(Proveedor).filter(Proveedor.id == compra.proveedor_id).first()
             
             compra_data = {
@@ -381,7 +382,7 @@ def listar_compras(db: Session = Depends(get_db)):
                 "detalles": []
             }
             
-            # Obtener detalles
+            
             detalles = db.query(DetalleCompra).filter(DetalleCompra.compra_id == compra.id).all()
             
             for detalle in detalles:
@@ -413,7 +414,7 @@ def obtener_compra(compra_id: int, db: Session = Depends(get_db)):
         if not compra:
             raise HTTPException(status_code=404, detail="Compra no encontrada")
         
-        # Obtener proveedor
+    
         proveedor = db.query(Proveedor).filter(Proveedor.id == compra.proveedor_id).first()
         
         compra_data = {
@@ -430,7 +431,7 @@ def obtener_compra(compra_id: int, db: Session = Depends(get_db)):
             "detalles": []
         }
         
-        # Obtener detalles
+ 
         detalles = db.query(DetalleCompra).filter(DetalleCompra.compra_id == compra.id).all()
         
         for detalle in detalles:
@@ -457,7 +458,7 @@ def obtener_compra(compra_id: int, db: Session = Depends(get_db)):
 
 @router.post("/ventas/", response_model=VentaOut)
 def crear_venta(venta: VentaCreate, db: Session = Depends(get_db)):
-    # Obtener el último número de orden registrado
+
     ultimo_orden = db.query(func.max(Venta.orden_venta)).scalar()
     if ultimo_orden and ultimo_orden.isdigit():
         nuevo_numero = int(ultimo_orden) + 1
@@ -467,7 +468,7 @@ def crear_venta(venta: VentaCreate, db: Session = Depends(get_db)):
 
     nueva_venta = Venta(
         cliente_id=venta.cliente_id,
-        vendedor_id=venta.vendedor_id,  # Agregar esta línea
+        vendedor_id=venta.vendedor_id, 
         orden_venta=orden_formateada,
         fecha=datetime.now(),
     )
@@ -500,10 +501,10 @@ def listar_ventas(db: Session = Depends(get_db)):
         
         result = []
         for venta in ventas:
-            # Obtener cliente
+           
             cliente = db.query(Cliente).filter(Cliente.id == venta.cliente_id).first()
             
-            # Obtener vendedor
+           
             vendedor = None
             if venta.vendedor_id:
                 vendedor = db.query(Usuario).filter(Usuario.id == venta.vendedor_id).first()
@@ -525,7 +526,7 @@ def listar_ventas(db: Session = Depends(get_db)):
                 "detalles": []
             }
             
-            # Obtener detalles
+           
             detalles = db.query(DetalleVenta).filter(DetalleVenta.venta_id == venta.id).all()
             
             for detalle in detalles:
@@ -563,10 +564,10 @@ def obtener_venta(venta_id: int, db: Session = Depends(get_db)):
         if not venta:
             raise HTTPException(status_code=404, detail="Venta no encontrada")
         
-        # Obtener cliente
+       
         cliente = db.query(Cliente).filter(Cliente.id == venta.cliente_id).first()
         
-        # Obtener vendedor
+       
         vendedor = None
         if venta.vendedor_id:
             vendedor = db.query(Usuario).filter(Usuario.id == venta.vendedor_id).first()
@@ -588,7 +589,7 @@ def obtener_venta(venta_id: int, db: Session = Depends(get_db)):
             "detalles": []
         }
         
-        # Obtener detalles
+        
         detalles = db.query(DetalleVenta).filter(DetalleVenta.venta_id == venta.id).all()
         
         for detalle in detalles:

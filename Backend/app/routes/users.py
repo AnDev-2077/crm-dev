@@ -11,7 +11,7 @@ router = APIRouter(
     tags=["Gestión de Usuarios"]
 )
 
-# Función para verificar si el usuario es admin
+
 def require_admin(current_user: Usuario = Depends(get_current_user)):
     """Requiere que el usuario sea administrador"""
     if current_user.rol != "administrador":
@@ -41,7 +41,7 @@ def get_usuario(user_id: int, db: Session = Depends(get_db), current_user: Usuar
 @router.post("/", response_model=UsuarioOut, status_code=status.HTTP_201_CREATED)
 def create_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
     """Crear un nuevo usuario (solo admin)"""
-    # Verificar si el usuario ya existe
+    
     existing_user = db.query(Usuario).filter(Usuario.correo == usuario.correo).first()
     if existing_user:
         raise HTTPException(
@@ -49,7 +49,7 @@ def create_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db), curren
             detail="El correo electrónico ya está registrado"
         )
     
-    # Crear nuevo usuario con contraseña hasheada
+    
     hashed_password = hash_password(usuario.contraseña)
     db_usuario = Usuario(
         nombre=usuario.nombre,
@@ -80,7 +80,7 @@ def update_usuario(
             detail="Usuario no encontrado"
         )
     
-    # Verificar si el nuevo correo ya existe (si se está actualizando)
+    
     if usuario_update.correo and usuario_update.correo != db_usuario.correo:
         existing_user = db.query(Usuario).filter(Usuario.correo == usuario_update.correo).first()
         if existing_user:
@@ -89,10 +89,10 @@ def update_usuario(
                 detail="El correo electrónico ya está registrado"
             )
     
-    # Actualizar campos
+    
     update_data = usuario_update.dict(exclude_unset=True)
     
-    # Si se actualiza la contraseña, hashearla
+    
     if "contraseña" in update_data:
         update_data["contraseña"] = hash_password(update_data["contraseña"])
     
@@ -113,7 +113,7 @@ def delete_usuario(user_id: int, db: Session = Depends(get_db), current_user: Us
             detail="Usuario no encontrado"
         )
     
-    # No permitir que el admin se elimine a sí mismo
+    
     if db_usuario.id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -134,7 +134,7 @@ def toggle_usuario_status(user_id: int, db: Session = Depends(get_db), current_u
             detail="Usuario no encontrado"
         )
     
-    # No permitir que el admin se desactive a sí mismo
+    
     if db_usuario.id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

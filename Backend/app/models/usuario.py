@@ -13,5 +13,5 @@ class Usuario(Base):
     rol = Column(String(50), nullable=False)
     is_active = Column(Boolean, default=True, nullable=True)
     
-    # Agregar esta línea para la relación con ventas
+
     ventas = relationship("Venta", back_populates="vendedor")

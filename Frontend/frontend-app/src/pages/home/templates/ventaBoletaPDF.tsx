@@ -197,12 +197,12 @@ export default function VentaBoletaPDF({ numero, fecha, cliente, productos, tota
             <Image src="/logo.png" style={styles.logoBox} />
             <View style={styles.companyInfo}>
               <Text style={{ fontWeight: "bold", fontSize: 12 }}>DISTRIBUCIONES ADISAN</Text>
-              <Text>RUC: #########</Text>
+              <Text>RUC: 10421785185</Text>
               <Text>Av Tacabamba 766 - Chota - Cajamarca</Text>
               <Text>Telefono: 976667504</Text>
             </View>
             <View style={styles.rucBox}>
-              <Text style={styles.rucText}>R.U.C. Nº ############</Text>
+              <Text style={styles.rucText}>R.U.C. Nº 10421785185</Text>
               <Text style={styles.boletaTitle}>BOLETA DE VENTA</Text>
               <Text style={styles.boletaNum}>N° {numero}</Text>
             </View>

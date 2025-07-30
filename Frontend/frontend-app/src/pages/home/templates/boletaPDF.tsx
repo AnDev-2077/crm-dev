@@ -175,7 +175,7 @@
           </View>
           <View>
             <View style={styles.rucBox}>
-              <Text style={styles.rucText}>R.U.C. ########</Text>
+              <Text style={styles.rucText}>R.U.C. 10421785185</Text>
             </View>
             <View style={styles.boletaBox}>
               <Text style={styles.boletaTitle}>BOLETA DE COMPRA</Text>

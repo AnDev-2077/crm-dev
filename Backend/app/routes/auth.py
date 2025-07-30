@@ -13,7 +13,7 @@ router = APIRouter(
     tags=["Autenticación"]
 )
 
-# Configuración para hashear contraseñas
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
@@ -67,7 +67,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 @router.post("/registro", response_model=UsuarioOut, status_code=status.HTTP_201_CREATED)
 def registrar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
     """Registra un nuevo usuario"""
-    # Verificar si el usuario ya existe
+
     db_user = get_user_by_email(db, email=usuario.correo)
     if db_user:
         raise HTTPException(
@@ -75,7 +75,7 @@ def registrar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
             detail="El correo electrónico ya está registrado"
         )
     
-    # Crear nuevo usuario con contraseña hasheada
+
     hashed_password = hash_password(usuario.contraseña)
     db_user = Usuario(
         nombre=usuario.nombre,
@@ -118,7 +118,7 @@ def obtener_usuario_actual(current_user: Usuario = Depends(get_current_user)):
 @router.get("/usuarios", response_model=list[UsuarioOut])
 def listar_usuarios(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     """Lista todos los usuarios (requiere autenticación)"""
-    # Solo permitir a usuarios con rol de admin
+    
     if current_user.rol != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 
-# Cargar variables de entorno
+
 load_dotenv()
 
 SECRET_KEY = os.getenv("secret_key")
