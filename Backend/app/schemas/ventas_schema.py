@@ -9,6 +9,7 @@ class DetalleVentaCreate(BaseModel):
 
 class VentaCreate(BaseModel):
     cliente_id: int
+    vendedor_id: Optional[int] = None
     detalles: List[DetalleVentaCreate]
 
 class DetalleVenta(BaseModel):
@@ -24,6 +25,7 @@ class DetalleVenta(BaseModel):
 class VentaOut(BaseModel):
     id: int
     cliente_id: int
+    vendedor_id: Optional[int] = None
     fecha: datetime
     detalles: List[DetalleVenta]
 

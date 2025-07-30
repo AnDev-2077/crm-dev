@@ -19,6 +19,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 
@@ -29,7 +31,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuItem,
-  DropdownMenuSeparator,
+
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
@@ -51,6 +53,7 @@ export type Provider = {
 
 export default function DataTableDemo() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [providers, setProviders] = React.useState<Provider[]>([])
   const [loading, setLoading] = React.useState(true)
 
@@ -66,6 +69,18 @@ export default function DataTableDemo() {
   
   const handleProveedorCreado = (nuevo: Provider) => {
     setProviders((prev) => [...prev, nuevo])
+  }
+
+  
+  const handleNuevoProveedor = () => {
+    if (user?.rol === "trabajador") {
+      toast.error("No tienes permisos para crear nuevos proveedores", {
+        description: "Solo los administradores pueden crear proveedores.",
+        duration: 4000,
+      })
+      return
+    }
+    setDialogOpen(true)
   }
 
   const columns: ColumnDef<Provider>[] = [
@@ -223,7 +238,12 @@ export default function DataTableDemo() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button onClick={() => setDialogOpen(true)}>+ Nuevo proveedor</Button>
+        <Button 
+          onClick={handleNuevoProveedor}
+          title={user?.rol === "trabajador" ? "Solo los administradores pueden crear proveedores" : "Crear nuevo proveedor"}
+        >
+          + Nuevo proveedor
+        </Button>
       </div>
     </div>
       <ProveedorFormDialog

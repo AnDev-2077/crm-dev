@@ -1,5 +1,4 @@
-// compraBoletaExport.tsx
-import React from "react";
+
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import BoletaPDF from "@/pages/home/templates/boletaPDF";
 import { Button } from "@/components/ui/button";
@@ -9,14 +8,6 @@ type Product = {
   unidad: string;
   cantidad: number;
   precio: number;
-};
-
-type Proveedor = {
-  nombre: string;
-  correo: string;
-  telefono: string;
-  documento?: string;
-  tipoDocumento?: string;
 };
 
 type Props = {

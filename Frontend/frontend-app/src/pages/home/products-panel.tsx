@@ -243,7 +243,7 @@ export default function DataTableDemo() {
         </DropdownMenu>
 
         <Button
-          variant="default" // estilo negro por defecto
+          variant="default" 
           className="ml-2"
           onClick={() => navigate(`/home/products-panels`)}
         >

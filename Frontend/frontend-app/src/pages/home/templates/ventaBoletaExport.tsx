@@ -1,5 +1,4 @@
-//ventaBoletaExport.tsx
-import React from "react";
+
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import VentaBoletaPDF from "@/pages/home/templates/ventaBoletaPDF";
 import { Button } from "@/components/ui/button";

@@ -11,9 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import BoletaVentaExport from "@/pages/home/templates/ventaBoletaExport";
 import VentaBoletaExport from "@/pages/home/templates/ventaBoletaExport"
-import { PDFDownloadLink } from "@react-pdf/renderer";
+import { useAuth } from "@/context/AuthContext"
 
 interface Cliente {
   id: number
@@ -44,6 +43,7 @@ interface ProductoVenta {
 }
 
 export default function SalesView() {
+  const { user } = useAuth()
   const [clienteSeleccionado, setClienteSeleccionado] = useState("")
   const [openCombobox, setOpenCombobox] = useState(false)
   const [productosVenta, setProductosVenta] = useState<ProductoVenta[]>([])
@@ -51,19 +51,17 @@ export default function SalesView() {
   const [productos, setProductos] = useState<ProductoBackend[]>([])
   const [loadingProductos, setLoadingProductos] = useState(true)
   const [clientes, setClientes] = useState<Cliente[]>([])
-  const nombreTrabajador = "Trabajador 1"
   const [loadingVenta, setLoadingVenta] = useState(false)
   const [numeroOrden, setNumeroOrden] = useState<string | null>(null);
-  const [selectedSupplier, setSelectedSupplier] = useState<string>("")
-  // Agregar estados para controlar la venta guardada y la carga
-  const [ventaGuardada, setVentaGuardada] = useState(false);
-  // Estado para los datos de la venta registrada
+  
   const [ventaParaPDF, setVentaParaPDF] = useState<{
     cliente: { nombre: string; documento: string };
     vendedor: string;
     productos: { nombre: string; cantidad: number; precio: number }[];
     numeroOrden: string | null;
   } | null>(null);
+  
+  const [tipoDocumento, setTipoDocumento] = useState<string>("")
 
 useEffect(() => {
   const fetchNumeroOrden = async () => {
@@ -84,10 +82,10 @@ useEffect(() => {
   if (!clienteSeleccionado || productosVenta.length === 0) return;
 
   setLoadingVenta(true);
-  setVentaGuardada(false);
   try {
     const payload = {
       cliente_id: parseInt(clienteSeleccionado),
+      vendedor_id: user?.id, 
       detalles: productosVenta.map(p => ({
         producto_id: p.id,
         cantidad: p.cantidad,
@@ -98,13 +96,13 @@ useEffect(() => {
     const res = await axios.post("http://localhost:8000/ventas/", payload);
     console.log("Venta creada:", res.data);
 
-    // Guardar datos para el PDF antes de limpiar
+    
     setVentaParaPDF({
       cliente: {
         nombre: clienteSeleccionadoData?.nombre || "N/A",
         documento: clienteSeleccionadoData?.documento || "00000000",
       },
-      vendedor: "Trabajador 1",
+      vendedor: user?.nombre || "N/A",
       productos: productosVenta
         .filter((p) => p.cantidad > 0)
         .map((p) => {
@@ -123,10 +121,8 @@ useEffect(() => {
     await fetchProductos();
     await fetchNumeroOrden();
 
-    setVentaGuardada(true);
-    // No vaciar los campos aquí
-    // setProductosVenta([]);
-    // setClienteSeleccionado("");
+    
+    
   } catch (err) {
     console.error(" Error al registrar la venta:", err);
     alert(" Error al registrar la venta");
@@ -242,23 +238,39 @@ useEffect(() => {
 
   const clienteSeleccionadoData = clientes.find((c) => c.id.toString() === clienteSeleccionado)
 
-  // En el handler de selección de cliente, limpia ventaParaPDF
+  
+  useEffect(() => {
+    if (clienteSeleccionadoData?.documento) {
+      const longitud = clienteSeleccionadoData.documento.length
+      if (longitud === 8) {
+        setTipoDocumento("DNI")
+      } else if (longitud === 11) {
+        setTipoDocumento("RUC")
+      } else {
+        setTipoDocumento("DOC")
+      }
+    } else {
+      setTipoDocumento("")
+    }
+  }, [clienteSeleccionadoData])
+
+  
   const handleSeleccionarCliente = (currentValue: string) => {
     setClienteSeleccionado(currentValue === clienteSeleccionado ? "" : currentValue);
-    setVentaParaPDF(null); // Oculta el botón de exportar PDF al iniciar nueva venta
+    setVentaParaPDF(null); 
     setOpenCombobox(false);
   };
 
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header */}
+      
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <User className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-2xl font-bold">Sistema de Ventas</h1>
-            <p className="text-muted-foreground">Vendedor: {nombreTrabajador}</p>
+            <p className="text-muted-foreground">Vendedor: {user?.nombre || "Cargando..."}</p>
           </div>
         </div>
         <Badge variant="outline" className="text-sm">
@@ -268,9 +280,9 @@ useEffect(() => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Panel izquierdo */}
+        
         <div className="lg:col-span-2 space-y-6">
-          {/* Selector de cliente */}
+          
           <Card>
             <CardHeader>
               <CardTitle>Seleccionar Cliente</CardTitle>
@@ -323,7 +335,8 @@ useEffect(() => {
                         <div className="flex flex-col">
                           <span className="font-medium">{cliente.nombre}</span>
                           <span className="text-sm text-muted-foreground">
-                            {cliente.tipoDocumento}: {cliente.documento}
+                            {cliente.documento && cliente.documento.length === 8 ? "DNI" : 
+                             cliente.documento && cliente.documento.length === 11 ? "RUC" : "DOC"}: {cliente.documento}
                           </span>
                         </div>
                       </CommandItem>
@@ -336,7 +349,7 @@ useEffect(() => {
             </CardContent>
           </Card>
 
-          {/* Lista de productos */}
+          
           <Card>
             <CardHeader>
               <CardTitle>Productos Disponibles</CardTitle>
@@ -443,8 +456,7 @@ useEffect(() => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Panel derecho - Factura */}
+                   
         <div className="lg:col-span-1">
           <Card className="sticky top-6">
             <CardHeader>
@@ -456,7 +468,7 @@ useEffect(() => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-white border-2 border-gray-200 rounded-lg p-4 min-h-[600px] shadow-inner space-y-4">
-              {/* Encabezado de la orden */}
+                    
               <div className="text-center border-b pb-4">
                 <h2 className="text-lg font-bold">ORDEN DE VENTA</h2>
                 <p className="text-sm text-gray-600">#{numeroOrden || "Cargando..."}</p>
@@ -466,7 +478,7 @@ useEffect(() => {
                 <h4 className="font-semibold text-sm">Cliente:</h4>
                 <p className="text-sm text-muted-foreground">
                 {clienteSeleccionadoData
-                  ? `${clienteSeleccionadoData.nombre} (${clienteSeleccionadoData.tipoDocumento}: ${clienteSeleccionadoData.documento})`
+                  ? `${clienteSeleccionadoData.nombre} (${tipoDocumento}: ${clienteSeleccionadoData.documento})`
                   : "Sin cliente seleccionado"}
               </p>
               </div>
@@ -474,7 +486,7 @@ useEffect(() => {
 
               <div className="space-y-2">
                 <h4 className="font-semibold text-sm">Vendedor:</h4>
-                <p className="text-sm text-muted-foreground">{nombreTrabajador}</p>
+                <p className="text-sm text-muted-foreground">{user?.nombre || "Cargando..."}</p>
               </div>
 
               <Separator />

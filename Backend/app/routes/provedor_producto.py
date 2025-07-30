@@ -20,6 +20,7 @@ from ..models.compra import Compra
 from ..models.compra import DetalleCompra
 from sqlalchemy import func
 from ..models.ventas import Venta, DetalleVenta
+from ..models.usuario import Usuario
 from ..schemas.ventas_schema import VentaCreate, VentaOut
 
 router = APIRouter()
@@ -466,6 +467,7 @@ def crear_venta(venta: VentaCreate, db: Session = Depends(get_db)):
 
     nueva_venta = Venta(
         cliente_id=venta.cliente_id,
+        vendedor_id=venta.vendedor_id,  # Agregar esta línea
         orden_venta=orden_formateada,
         fecha=datetime.now(),
     )
@@ -501,6 +503,11 @@ def listar_ventas(db: Session = Depends(get_db)):
             # Obtener cliente
             cliente = db.query(Cliente).filter(Cliente.id == venta.cliente_id).first()
             
+            # Obtener vendedor
+            vendedor = None
+            if venta.vendedor_id:
+                vendedor = db.query(Usuario).filter(Usuario.id == venta.vendedor_id).first()
+            
             venta_data = {
                 "id": venta.id,
                 "orden_venta": venta.orden_venta,
@@ -509,6 +516,11 @@ def listar_ventas(db: Session = Depends(get_db)):
                     "id": cliente.id if cliente else None,
                     "nombre": cliente.nombre if cliente else "Sin cliente",
                     "documento": cliente.documento if cliente else "N/A"
+                },
+                "vendedor": {
+                    "id": vendedor.id if vendedor else None,
+                    "nombre": f"{vendedor.nombre} {vendedor.apellidos}" if vendedor else "Sin vendedor",
+                    "rol": vendedor.rol if vendedor else "N/A"
                 },
                 "detalles": []
             }
@@ -554,6 +566,11 @@ def obtener_venta(venta_id: int, db: Session = Depends(get_db)):
         # Obtener cliente
         cliente = db.query(Cliente).filter(Cliente.id == venta.cliente_id).first()
         
+        # Obtener vendedor
+        vendedor = None
+        if venta.vendedor_id:
+            vendedor = db.query(Usuario).filter(Usuario.id == venta.vendedor_id).first()
+        
         venta_data = {
             "id": venta.id,
             "orden_venta": venta.orden_venta,
@@ -562,6 +579,11 @@ def obtener_venta(venta_id: int, db: Session = Depends(get_db)):
                 "id": cliente.id if cliente else None,
                 "nombre": cliente.nombre if cliente else "Sin cliente",
                 "documento": cliente.documento if cliente else "N/A"
+            },
+            "vendedor": {
+                "id": vendedor.id if vendedor else None,
+                "nombre": f"{vendedor.nombre} {vendedor.apellidos}" if vendedor else "Sin vendedor",
+                "rol": vendedor.rol if vendedor else "N/A"
             },
             "detalles": []
         }

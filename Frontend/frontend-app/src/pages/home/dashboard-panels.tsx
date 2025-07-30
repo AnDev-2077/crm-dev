@@ -1,27 +1,17 @@
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { 
   BarChart3, 
   Users, 
-  DollarSign, 
   Activity, 
-  MessageSquare, 
-  Calendar, 
-  Clock,
   ShoppingCart,
   Package,
   TrendingUp,
-  TrendingDown,
-  Eye,
-  UserCheck,
   Truck,
-  Store
 } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
 import axios from "axios"
+import { useAuth } from "@/context/AuthContext"
 
 interface DashboardStats {
   totalVentas: number
@@ -36,6 +26,7 @@ interface DashboardStats {
 }
 
 export default function DashboardPanel() {
+  const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats>({
     totalVentas: 0,
     totalCompras: 0,
@@ -49,12 +40,15 @@ export default function DashboardPanel() {
   })
   const [loading, setLoading] = useState(true)
 
+  
+  const isAdmin = user?.rol === "administrador"
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
         
-        // Obtener todos los datos en paralelo
+        
         const [ventasRes, comprasRes, productosRes, clientesRes, proveedoresRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/ventas/`),
           axios.get(`${import.meta.env.VITE_API_URL}/compras/`),
@@ -69,7 +63,7 @@ export default function DashboardPanel() {
         const clientes = clientesRes.data || []
         const proveedores = proveedoresRes.data || []
 
-        // Calcular totales
+        
         const totalVentas = ventas.reduce((sum: number, venta: any) => {
           return sum + (venta.detalles?.reduce((detSum: number, det: any) => detSum + det.total, 0) || 0)
         }, 0)
@@ -78,10 +72,10 @@ export default function DashboardPanel() {
           return sum + (compra.detalles?.reduce((detSum: number, det: any) => detSum + det.total, 0) || 0)
         }, 0)
 
-        // Productos con bajo stock (menos de 10 unidades)
+        
         const productosBajoStock = productos.filter((p: any) => p.stock < 10)
 
-        // Top productos por stock
+        
         const topProductos = productos
           .sort((a: any, b: any) => b.stock - a.stock)
           .slice(0, 5)
@@ -131,18 +125,20 @@ export default function DashboardPanel() {
     {
       title: "Ventas Totales",
       value: formatCurrency(stats.totalVentas),
-      
+      change: "total",
       icon: TrendingUp,
       color: "text-green-600",
-      bgColor: "bg-green-50"
+      bgColor: "bg-green-50",
+      adminOnly: true
     },
     {
       title: "Compras Totales",
       value: formatCurrency(stats.totalCompras),
-      
+      change: "total",
       icon: ShoppingCart,
       color: "text-blue-600",
-      bgColor: "bg-blue-50"
+      bgColor: "bg-blue-50",
+      adminOnly: true
     },
     {
       title: "Productos",
@@ -150,7 +146,8 @@ export default function DashboardPanel() {
       change: `${stats.productosBajoStock.length} bajo stock`,
       icon: Package,
       color: "text-orange-600",
-      bgColor: "bg-orange-50"
+      bgColor: "bg-orange-50",
+      adminOnly: false
     },
     {
       title: "Clientes",
@@ -158,7 +155,8 @@ export default function DashboardPanel() {
       change: "activos",
       icon: Users,
       color: "text-purple-600",
-      bgColor: "bg-purple-50"
+      bgColor: "bg-purple-50",
+      adminOnly: false
     },
     {
       title: "Proveedores",
@@ -166,9 +164,13 @@ export default function DashboardPanel() {
       change: "registrados",
       icon: Truck,
       color: "text-indigo-600",
-      bgColor: "bg-indigo-50"
+      bgColor: "bg-indigo-50",
+      adminOnly: false
     }
   ]
+
+  
+  const filteredStats = isAdmin ? dashboardStats : dashboardStats.filter(stat => !stat.adminOnly)
 
   if (loading) {
     return (
@@ -184,63 +186,65 @@ export default function DashboardPanel() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
 
-      {/* Resumen Financiero */}
-      <div className="grid gap-4 md:grid-cols-1">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Resumen Financiero
-            </CardTitle>
-            <CardDescription>Análisis de ingresos y gastos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium">Ingresos (Ventas)</span>
+      
+      {isAdmin && (
+        <div className="grid gap-4 md:grid-cols-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Resumen Financiero
+              </CardTitle>
+              <CardDescription>Análisis de ingresos y gastos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium">Ingresos (Ventas)</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency(stats.totalVentas)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Total de ventas realizadas
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(stats.totalVentas)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Total de ventas realizadas
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium">Gastos (Compras)</span>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium">Gastos (Compras)</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(stats.totalCompras)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Total de compras realizadas
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(stats.totalCompras)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Total de compras realizadas
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-purple-600" />
-                  <span className="text-sm font-medium">Balance</span>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-purple-600" />
+                    <span className="text-sm font-medium">Balance</span>
+                  </div>
+                  <p className={`text-2xl font-bold ${stats.totalVentas - stats.totalCompras >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(stats.totalVentas - stats.totalCompras)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.totalVentas - stats.totalCompras >= 0 ? 'Ganancia neta' : 'Pérdida neta'}
+                  </p>
                 </div>
-                <p className={`text-2xl font-bold ${stats.totalVentas - stats.totalCompras >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(stats.totalVentas - stats.totalCompras)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.totalVentas - stats.totalCompras >= 0 ? 'Ganancia neta' : 'Pérdida neta'}
-                </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {/* Panel de estadísticas principales */}
+      
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {dashboardStats.map((stat, index) => (
+        {filteredStats.map((stat, index) => (
           <Card key={index} className={`${stat.bgColor}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
@@ -256,8 +260,9 @@ export default function DashboardPanel() {
         ))}
       </div>
 
-      {/* Ventas Recientes, Compras y Notificaciones */}
+      
       <div className="grid gap-4 md:grid-cols-3">
+        
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -301,49 +306,53 @@ export default function DashboardPanel() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-blue-600" />
-              Compras
-            </CardTitle>
-            <CardDescription>Últimas compras registradas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {stats.comprasRecientes.length > 0 ? (
-                stats.comprasRecientes.map((compra, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">#{compra.orden_compra}</Badge>
-                        <span className="text-sm font-medium">
-                          {compra.proveedor?.nombre || "Proveedor no especificado"}
-                        </span>
+        
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-blue-600" />
+                Compras
+              </CardTitle>
+              <CardDescription>Últimas compras registradas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {stats.comprasRecientes.length > 0 ? (
+                  stats.comprasRecientes.map((compra, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">#{compra.orden_compra}</Badge>
+                          <span className="text-sm font-medium">
+                            {compra.proveedor?.nombre || "Proveedor no especificado"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {compra.detalles?.length || 0} productos
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {compra.detalles?.length || 0} productos
-                      </p>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">
+                          {formatCurrency(compra.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(compra.fecha)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
-                        {formatCurrency(compra.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(compra.fecha)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-muted-foreground py-4">
-                  No hay compras recientes
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">
+                    No hay compras recientes
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
+        
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

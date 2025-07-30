@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import axios from "axios"
-import { useNavigate } from "react-router-dom"
 import type {
   ColumnDef,
   ColumnFiltersState,
@@ -73,6 +72,7 @@ export default function DataTableDemo() {
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [isEditMode, setIsEditMode] = React.useState(false)
   const [editingUser, setEditingUser] = React.useState<User | null>(null)
+  const [statusFilter, setStatusFilter] = React.useState<string>("all")
   const [formData, setFormData] = React.useState({
     nombre: "",
     apellidos: "",
@@ -143,7 +143,7 @@ export default function DataTableDemo() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar que todos los campos estén completos
+    
     if (!formData.nombre || !formData.apellidos || !formData.correo || !formData.contraseña || !formData.rol) {
         toast.error("Por favor complete todos los campos obligatorios");
         return;
@@ -151,7 +151,7 @@ export default function DataTableDemo() {
 
     try {
         if (isEditMode && editingUser) {
-        // Editar usuario
+        
         const response = await axios.put(
             `http://127.0.0.1:8000/users/${editingUser.id}/`,
             formData,
@@ -167,7 +167,7 @@ export default function DataTableDemo() {
         );
         toast.success("Usuario actualizado correctamente");
         } else {
-        // Crear usuario
+        
         const response = await axios.post(
             "http://127.0.0.1:8000/auth/registro",
             {
@@ -196,6 +196,41 @@ export default function DataTableDemo() {
         }
     } finally {
         handleDialogClose(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    try {
+      
+      if (!window.confirm(`¿Está seguro de que desea ${user.is_active ? 'desactivar' : 'activar'} al usuario ${user.nombre} ${user.apellidos}?`)) {
+        return;
+      }
+
+      const response = await axios.patch(
+        `http://127.0.0.1:8000/users/${user.id}/toggle-status`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "ngrok-skip-browser-warning": "true",
+          },
+        }
+      );
+
+      
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? response.data : u))
+      );
+
+      const action = response.data.is_active ? 'activado' : 'desactivado';
+      toast.success(`Usuario ${action} correctamente`);
+    } catch (error) {
+      console.error("Error al cambiar estado del usuario:", error);
+      if (axios.isAxiosError(error) && error.response?.data) {
+        toast.error(`Error: ${error.response.data.detail || "Error al cambiar estado del usuario"}`);
+      } else {
+        toast.error("Error al cambiar estado del usuario");
+      }
     }
   };
 
@@ -249,10 +284,23 @@ export default function DataTableDemo() {
       ),
     },
     {
+      accessorKey: "is_active",
+      header: "Estado",
+      cell: ({ row }) => {
+        const isActive = row.getValue("is_active");
+        return (
+          <Badge className={isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+            {isActive ? "Activo" : "Inactivo"}
+          </Badge>
+        );
+      },
+    },
+    {
       accessorKey: "Acciones",
       id: "actions",
       enableHiding: false,
       cell: ({ row }) => {
+        const user = row.original;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -263,11 +311,14 @@ export default function DataTableDemo() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleEditUser(row.original)}>
+              <DropdownMenuItem onClick={() => handleEditUser(user)}>
                 Editar
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                Eliminar
+              <DropdownMenuItem 
+                onClick={() => handleDeleteUser(user)}
+                className={user.is_active ? "text-red-600" : "text-green-600"}
+              >
+                {user.is_active ? "Desactivar" : "Activar"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -330,7 +381,19 @@ export default function DataTableDemo() {
       const correo = row.original.correo?.toLowerCase() || ""
       const rol = row.original.rol?.toLowerCase() || ""
       const val = filterValue.toLowerCase()
-      return nombre.includes(val) || apellidos.includes(val) || correo.includes(val) || rol.includes(val)
+      
+      
+      const textMatch = nombre.includes(val) || apellidos.includes(val) || correo.includes(val) || rol.includes(val)
+      
+      
+      let statusMatch = true;
+      if (statusFilter === "active") {
+        statusMatch = row.original.is_active === true;
+      } else if (statusFilter === "inactive") {
+        statusMatch = row.original.is_active === false;
+      }
+      
+      return textMatch && statusMatch;
     },
   })
 
@@ -345,6 +408,19 @@ export default function DataTableDemo() {
         onChange={(e) => setGlobalFilter(e.target.value)}
         className="max-w-sm"
       />
+
+      <div className="ml-4">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrar por estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los usuarios</SelectItem>
+            <SelectItem value="active">Solo activos</SelectItem>
+            <SelectItem value="inactive">Solo inactivos</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className="ml-auto flex items-center gap-x-2">
         <DropdownMenu>
@@ -423,7 +499,12 @@ export default function DataTableDemo() {
 
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-muted-foreground flex-1 text-sm">
-          {table.getFilteredRowModel().rows.length} usuarios registrados.
+          {table.getFilteredRowModel().rows.length} de {users.length} usuarios
+          {statusFilter !== "all" && (
+            <span className="ml-1">
+              ({statusFilter === "active" ? "activos" : "inactivos"})
+            </span>
+          )}
         </div>
         <div className="space-x-2">
           <Button

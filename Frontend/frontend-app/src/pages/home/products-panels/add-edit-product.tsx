@@ -25,8 +25,6 @@ import {
 } from "@/components/ui/dialog"
 
 import { Toaster } from "sonner"
-import type { ToasterProps } from "sonner"
-
 
 type Proveedor = {
   id: number

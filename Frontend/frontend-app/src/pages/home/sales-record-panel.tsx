@@ -1,24 +1,10 @@
 "use client"
 
-import * as React from "react"
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import ExcelJS from "exceljs"
-import type {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-} from "@tanstack/react-table"
-import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
+
 import { ChevronLeft, ChevronRight, Search, Filter, Download, Eye } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -36,6 +22,11 @@ interface Venta {
     id: number
     nombre: string
     documento: string
+  }
+  vendedor: {
+    id: number
+    nombre: string
+    rol: string
   }
   detalles: DetalleVenta[]
 }
@@ -82,7 +73,7 @@ export default function SalesHistory() {
     fetchVentas()
   }, [])
 
-  // Filtrar datos
+  
   const filteredData = ventas.filter((venta) => {
     const matchesSearch =
       venta.cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,13 +86,13 @@ export default function SalesHistory() {
     return matchesSearch && matchesCliente
   })
 
-  // Calcular paginación
+  
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const currentData = filteredData.slice(startIndex, endIndex)
 
-  // Funciones de navegación
+  
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
   }
@@ -118,7 +109,7 @@ export default function SalesHistory() {
     }
   }
 
-  // Reset página cuando cambian los filtros
+  
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(1)
@@ -129,7 +120,7 @@ export default function SalesHistory() {
     setCurrentPage(1)
   }
 
-  // Obtener clientes únicos para el filtro
+  
   const clientesUnicos = [...new Set(ventas.map(venta => venta.cliente.nombre))]
 
   const formatCurrency = (amount: number) => {
@@ -140,35 +131,37 @@ export default function SalesHistory() {
   }
 
   const exportToExcel = async () => {
-    // Crear workbook y worksheet
+    
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Ventas')
 
-    // Definir columnas
+    
     worksheet.columns = [
       { header: 'Orden de Venta', key: 'orden', width: 15 },
       { header: 'Fecha', key: 'fecha', width: 12 },
       { header: 'Cliente', key: 'cliente', width: 25 },
       { header: 'Documento', key: 'documento', width: 15 },
+      { header: 'Vendedor', key: 'vendedor', width: 20 },
       { header: 'Productos', key: 'productos', width: 10 },
       { header: 'Total', key: 'total', width: 15 },
       { header: 'Estado', key: 'estado', width: 12 }
     ]
 
-    // Agregar datos
+    
     ventas.forEach((venta: any) => {
       worksheet.addRow({
         orden: venta.orden_venta || 'N/A',
         fecha: venta.fecha ? new Date(venta.fecha).toLocaleDateString('es-ES') : 'N/A',
         cliente: venta.cliente?.nombre || 'Sin cliente',
         documento: venta.cliente?.documento || 'N/A',
+        vendedor: venta.vendedor?.nombre || 'Sin vendedor',
         productos: venta.detalles?.length || 0,
         total: formatCurrency(venta.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0),
         estado: 'Completada'
       })
     })
 
-    // Estilo para el header
+    
     worksheet.getRow(1).font = { bold: true }
     worksheet.getRow(1).fill = {
       type: 'pattern',
@@ -176,11 +169,11 @@ export default function SalesHistory() {
       fgColor: { argb: 'FFE0E0E0' }
     }
 
-    // Generar nombre de archivo con fecha
+    
     const fecha = new Date().toISOString().split('T')[0]
     const fileName = `ventas_${fecha}.xlsx`
 
-    // Descargar archivo
+    
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = window.URL.createObjectURL(blob)
@@ -225,7 +218,7 @@ export default function SalesHistory() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Filtros */}
+
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -252,7 +245,7 @@ export default function SalesHistory() {
             </Select>
           </div>
 
-          {/* Tabla */}
+          
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -261,6 +254,7 @@ export default function SalesHistory() {
                   <TableHead>Fecha</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Documento</TableHead>
+                  <TableHead>Vendedor</TableHead>
                   <TableHead>Productos</TableHead>
                   <TableHead className="text-center">Total Items</TableHead>
                   <TableHead className="text-right">Total Venta</TableHead>
@@ -281,6 +275,7 @@ export default function SalesHistory() {
                         <TableCell>{new Date(venta.fecha).toLocaleDateString('es-ES')}</TableCell>
                         <TableCell>{venta.cliente.nombre}</TableCell>
                         <TableCell>{venta.cliente.documento}</TableCell>
+                        <TableCell>{venta.vendedor?.nombre || 'N/A'}</TableCell>
                         <TableCell>
                           <div className="text-sm">
                             <Badge variant="outline" className="text-xs">
@@ -319,7 +314,7 @@ export default function SalesHistory() {
             </Table>
           </div>
 
-          {/* Paginación */}
+          
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
               <div className="text-sm text-muted-foreground">
@@ -338,7 +333,7 @@ export default function SalesHistory() {
                   Anterior
                 </Button>
 
-                {/* Números de página */}
+                
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNumber

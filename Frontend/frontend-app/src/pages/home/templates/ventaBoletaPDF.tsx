@@ -1,4 +1,3 @@
-//ventaBoletaPDF.tsx
 import React, { useState } from "react"
 import {
   Document,
@@ -108,13 +107,13 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   cellPrecioUnit: {
-    width: 80, // antes 60
+    width: 80, 
     padding: 2,
     textAlign: "right",
     color: "#000",
   },
   cellPrecioVenta: {
-    width: 80, // antes 60
+    width: 80, 
     padding: 2,
     textAlign: "right",
     color: "#000",
@@ -171,10 +170,10 @@ type Props = {
   totalGeneral: number
 }
 
-export default function VentaBoletaPDF({ numero, fecha, cliente, vendedor, productos, totalGeneral }: Props) {
+export default function VentaBoletaPDF({ numero, fecha, cliente, productos, totalGeneral }: Props) {
   const [tipoDocumento, setTipoDocumento] = useState<string>("")
 
-  // Determinar el tipo de documento basado en la longitud
+  
   React.useEffect(() => {
     if (cliente?.documento) {
       const longitud = cliente.documento.length

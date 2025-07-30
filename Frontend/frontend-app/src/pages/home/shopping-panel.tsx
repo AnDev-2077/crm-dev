@@ -1,4 +1,4 @@
-//shopping-panel.tsx
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -8,12 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useRef } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import BoletaExport from "@/pages/home/templates/boletaExport";
 
-// Spinner simple
 const Spinner = () => (
   <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -45,10 +41,7 @@ interface Product {
   descripcion: string
    tUnidad?: TipoUnidad | null
 }
-type Unidad = {
-  id: number
-  nombre: string
-}
+
 interface Proveedor {
   id: string;
   nombre: string;
@@ -67,42 +60,10 @@ export default function SupplierProductManager() {
   const [suppliers, setSuppliers] = useState<Proveedor[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [availableProducts, setAvailableProducts] = useState<Product[]>([])
-  const [unidades, setUnidades] = useState<Unidad[]>([])
-  const [searchNombre, setSearchNombre] = useState("");
-  const [searchStock, setSearchStock] = useState("");
   const [numeroOrden, setNumeroOrden] = useState<string | null>(null);
   const [loadingCompra, setLoadingCompra] = useState(false);
   const [compraGuardada, setCompraGuardada] = useState(false);
-
-  const fetchTipoUnidades = async (): Promise<TipoUnidad[]> => {
-  try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/tipo-unidades`);
-    return response.data;
-  } catch (error) {
-    console.error("Error al obtener tipos de unidad:", error);
-    return [];
-  }
-};
-
-const [supplierProducts, setSupplierProducts] = useState<Product[]>([])
-const pdfRef = useRef<HTMLDivElement>(null);
-
-const handleExportarPDF = async () => {
-  if (!pdfRef.current) return;
-
-  const canvas = await html2canvas(pdfRef.current, {
-    scale: 2,
-  });
-  const imgData = canvas.toDataURL("image/png");
-
-  const pdf = new jsPDF("p", "mm", "a4");
-  const imgProps = pdf.getImageProperties(imgData);
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-  pdf.save(`Orden_Compra_${numeroOrden || "sin_numero"}.pdf`);
-};
+  const [tipoDocumento, setTipoDocumento] = useState<string>("")
 
 useEffect(() => {
   const fetchNumeroOrden = async () => {
@@ -129,18 +90,7 @@ useEffect(() => {
     loadSuppliers()
   }, [])
 
-useEffect(() => {
-  const fetchUnidades = async () => {
-    try {
-      const response = await axios.get("http://localhost:8000/tipo-unidad/")
-      setUnidades(response.data)
-    } catch (error) {
-      console.error("Error al obtener unidades:", error)
-    }
-  }
 
-  fetchUnidades()
-}, [])
 useEffect(() => {
   const loadAvailableProducts = async () => {
     if (!selectedSupplier) return
@@ -225,6 +175,21 @@ if (field === "nombre") {
 
   const selectedSupplierData = suppliers.find((s) => s.id === selectedSupplier)
   const completeProducts = products.filter(isProductComplete)
+
+  useEffect(() => {
+    if (selectedSupplierData?.documento) {
+      const longitud = selectedSupplierData.documento.length
+      if (longitud === 8) {
+        setTipoDocumento("DNI")
+      } else if (longitud === 11) {
+        setTipoDocumento("RUC")
+      } else {
+        setTipoDocumento("DOC")
+      }
+    } else {
+      setTipoDocumento("")
+    }
+  }, [selectedSupplierData])
 const addNewProduct = () => {
   const newProduct: Product = {
     id: crypto.randomUUID(),
@@ -308,7 +273,7 @@ const handleGuardarCompra = async () => {
                       <strong>Teléfono:</strong> {selectedSupplierData.telefono}
                     </p>
                     <p className="text-sm text-blue-700">
-                      <strong>DNI / RUC:</strong> {selectedSupplierData.documento}
+                      <strong>{tipoDocumento}:</strong> {selectedSupplierData.documento}
                     </p>
                   </div>
                 )}
@@ -339,7 +304,7 @@ const handleGuardarCompra = async () => {
                       <AccordionContent>
                         <div className="space-y-4 pt-4">
                           <Accordion type="multiple" className="w-full space-y-2">
-                            {products.map((product, index) => (
+                            {products.map((product) => (
                               <AccordionItem
                                 key={product.id}
                                 value={`product-${product.id}`}
@@ -531,7 +496,7 @@ const handleGuardarCompra = async () => {
                         <div className="text-xs space-y-1 bg-gray-50 p-2 rounded">
                           <p className="font-medium">{selectedSupplierData.nombre}</p>
                           <p>Telefono: {selectedSupplierData.telefono}</p>
-                          <p>DNI / RUC: {selectedSupplierData.documento}</p>
+                          <p>{tipoDocumento}: {selectedSupplierData.documento}</p>
                         </div>
                       </div>                      
                       {/* Lista de productos */}
@@ -539,7 +504,7 @@ const handleGuardarCompra = async () => {
                         <div className="space-y-2">
                           <h3 className="font-semibold text-sm">PRODUCTOS:</h3>
                           <div className="space-y-2">
-                            {completeProducts.map((product, index) => (
+                            {completeProducts.map((product) => (
                               <div key={product.id} className="text-xs border-b border-gray-100 pb-2">
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
@@ -620,7 +585,7 @@ const handleGuardarCompra = async () => {
                             cliente={{
                               nombre: selectedSupplierData?.nombre || "N/A",
                               documento: selectedSupplierData?.documento || "",
-                              tipoDocumento: selectedSupplierData?.tipoDocumento || "RUC",
+                              tipoDocumento: tipoDocumento || "DOC",
                               correo: selectedSupplierData?.correo || "",
                               telefono: selectedSupplierData?.telefono || "",
                             }}

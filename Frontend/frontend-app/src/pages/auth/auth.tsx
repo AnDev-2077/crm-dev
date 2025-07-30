@@ -8,15 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Building2, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 
 import { useAuth } from "@/context/AuthContext"
 
 export default function LoginPage() {
   const navigate = useNavigate()
   
-  // Manejo seguro del AuthContext
+  
   let authContext;
   try {
     authContext = useAuth()
@@ -28,9 +27,15 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
+  
   const [isLoading, setIsLoading] = useState(false) 
   const [error, setError] = useState<string | null>(null)
+  const [isUserInactive, setIsUserInactive] = useState(false)
+
+
+  const getCurrentYear = () => {
+    return new Date().getFullYear()
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,15 +63,52 @@ export default function LoginPage() {
       console.log("Token recibido, guardando...")
 
       
-      if (authContext && authContext.login) {
-        await authContext.login(access_token)
-      } else {
-        console.warn("AuthContext no disponible, usando localStorage")
-        localStorage.setItem("token", access_token)
-      }
+      try {
+        const userResponse = await axios.get(`http://127.0.0.1:8000/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        })
 
-      console.log("Login exitoso, navegando a /home")
-      navigate("/home")
+        const userData = userResponse.data
+        console.log("Datos del usuario:", userData)
+
+        
+        if (userData.is_active === false) {
+          setIsUserInactive(true)
+          setError("Tu cuenta está inactiva. Contacta al administrador para activarla.")
+          setIsLoading(false)
+          return
+        }
+
+        
+        setIsUserInactive(false)
+
+        
+        if (authContext && authContext.login) {
+          await authContext.login(access_token)
+        } else {
+          console.warn("AuthContext no disponible, usando localStorage")
+          localStorage.setItem("token", access_token)
+        }
+
+        console.log("Login exitoso, navegando a /home")
+        navigate("/home")
+
+      } catch (userError) {
+        console.error("Error al verificar estado del usuario:", userError)
+        
+        if (authContext && authContext.login) {
+          await authContext.login(access_token)
+        } else {
+          console.warn("AuthContext no disponible, usando localStorage")
+          localStorage.setItem("token", access_token)
+        }
+
+        console.log("Login exitoso, navegando a /home")
+        navigate("/home")
+      }
       
     } catch (error) {
       console.error("Error completo en login:", error)
@@ -94,12 +136,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo y título del CRM */}
+        
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <Building2 className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
+            <img 
+              src="/logo2.png" 
+              alt="Logo Adisan" 
+              className="w-24 h-24 object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Adisan</h1>
           <p className="text-gray-600 mt-2">Venta de articulos al por mayor</p>
@@ -113,10 +159,34 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
-              {/* Mostrar error si existe */}
+              
               {error && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                  {error}
+                <div className={`p-3 text-sm border rounded-md ${
+                  isUserInactive 
+                    ? "text-orange-600 bg-orange-50 border-orange-200" 
+                    : "text-red-600 bg-red-50 border-red-200"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {isUserInactive && (
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    )}
+                    {error}
+                  </div>
+                  {isUserInactive && (
+                    <div className="mt-2 pt-2 border-t border-orange-200">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-orange-600 border-orange-300 hover:bg-orange-100"
+                        onClick={() => {
+                          
+                          alert("Para activar tu cuenta, contacta al administrador del sistema.")
+                        }}
+                      >
+                        Contactar Administrador
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -131,7 +201,12 @@ export default function LoginPage() {
                     type="email"
                     placeholder="admin@gmail.com" 
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      
+                      setError(null)
+                      setIsUserInactive(false)
+                    }}
                     className="pl-10"
                     required
                     disabled={isLoading} 
@@ -150,7 +225,12 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      
+                      setError(null)
+                      setIsUserInactive(false)
+                    }}
                     className="pl-10 pr-10"
                     required
                     disabled={isLoading}
@@ -166,24 +246,8 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor="remember" className="text-sm text-gray-600">
-                    Recordarme
-                  </Label>
-                </div>
-                <Button variant="link" className="px-0 text-sm text-blue-600 hover:text-blue-800">
-                  ¿Olvidaste tu contraseña?
-                </Button>
-              </div>
             </CardContent>
-
+<br></br>
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
@@ -194,18 +258,15 @@ export default function LoginPage() {
               </Button>
 
               <div className="text-center text-sm text-gray-600">
-                ¿No tienes una cuenta?{" "}
-                <Button variant="link" className="px-0 text-blue-600 hover:text-blue-800">
-                  Contacta al administrador
-                </Button>
+
               </div>
             </CardFooter>
           </form>
         </Card>
 
-        {/* Footer */}
+        
         <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2024 Adisan. Todos los derechos reservados.</p>
+          <p>© {getCurrentYear()} Adisan. Todos los derechos reservados.</p>
         </div>
       </div>
     </div>

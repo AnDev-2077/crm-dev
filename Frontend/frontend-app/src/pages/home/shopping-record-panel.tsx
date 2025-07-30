@@ -1,24 +1,10 @@
 "use client"
 
-import * as React from "react"
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import ExcelJS from "exceljs"
-import type {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-} from "@tanstack/react-table"
-import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
+
 import { ChevronLeft, ChevronRight, Search, Filter, Download, Eye } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -28,19 +14,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 
 
-interface Venta {
+interface Compra {
   id: number
-  orden_venta: string
+  orden_compra: string
   fecha: string
-  cliente: {
+  proveedor: {
     id: number
     nombre: string
     documento: string
   }
-  detalles: DetalleVenta[]
+  detalles: DetalleCompra[]
 }
 
-interface DetalleVenta {
+interface DetalleCompra {
   id: number
   producto: {
     id: number
@@ -51,57 +37,56 @@ interface DetalleVenta {
   total: number
 }
 
-export default function SalesHistory() {
+export default function ShoppingHistory() {
   const navigate = useNavigate()
-  const [ventas, setVentas] = useState<Venta[]>([])
+  const [compras, setCompras] = useState<Compra[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
-  const [clienteFilter, setClienteFilter] = useState("all")
+  const [proveedorFilter, setProveedorFilter] = useState("all")
 
   const itemsPerPage = 15
 
-  const handleViewVenta = (ventaId: number) => {
-    navigate(`/home/sales-record-panels/view-sales/${ventaId}`)
+  const handleViewCompra = (compraId: number) => {
+    navigate(`/home/shopping-record-panels/view-shopping/${compraId}`)
   }
 
   useEffect(() => {
-    const fetchVentas = async () => {
+    const fetchCompras = async () => {
       try {
         setLoading(true)
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/ventas/`)
-        setVentas(response.data)
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/compras/`)
+        setCompras(response.data)
       } catch (error) {
-        console.error("Error al cargar ventas:", error)
-        setVentas([])
+        console.error("Error al cargar compras:", error)
+        setCompras([])
       } finally {
         setLoading(false)
       }
     }
 
-    fetchVentas()
+    fetchCompras()
   }, [])
 
-  // Filtrar datos
-  const filteredData = ventas.filter((venta) => {
+   const filteredData = compras.filter((compra) => {
     const matchesSearch =
-      venta.cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      venta.orden_venta.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      venta.detalles.some(detalle => 
+      compra.proveedor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      compra.orden_compra.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      compra.detalles.some(detalle => 
         detalle.producto.nombre.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    const matchesCliente = clienteFilter === "all" || 
-      venta.cliente.nombre === clienteFilter
-    return matchesSearch && matchesCliente
+    const matchesProveedor = proveedorFilter === "all" || 
+      compra.proveedor.nombre === proveedorFilter
+    return matchesSearch && matchesProveedor
   })
 
-  // Calcular paginación
+  
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const currentData = filteredData.slice(startIndex, endIndex)
 
-  // Funciones de navegación
+  
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
   }
@@ -118,19 +103,19 @@ export default function SalesHistory() {
     }
   }
 
-  // Reset página cuando cambian los filtros
+  
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(1)
   }
 
-  const handleClienteChange = (value: string) => {
-    setClienteFilter(value)
+  const handleProveedorChange = (value: string) => {
+    setProveedorFilter(value)
     setCurrentPage(1)
   }
 
-  // Obtener clientes únicos para el filtro
-  const clientesUnicos = [...new Set(ventas.map(venta => venta.cliente.nombre))]
+  
+  const proveedoresUnicos = [...new Set(compras.map(compra => compra.proveedor.nombre))]
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-PE', {
@@ -140,35 +125,35 @@ export default function SalesHistory() {
   }
 
   const exportToExcel = async () => {
-    // Crear workbook y worksheet
+    
     const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet('Ventas')
+    const worksheet = workbook.addWorksheet('Compras')
 
-    // Definir columnas
+    
     worksheet.columns = [
-      { header: 'Orden de Venta', key: 'orden', width: 15 },
+      { header: 'Orden de Compra', key: 'orden', width: 15 },
       { header: 'Fecha', key: 'fecha', width: 12 },
-      { header: 'Cliente', key: 'cliente', width: 25 },
+      { header: 'Proveedor', key: 'proveedor', width: 25 },
       { header: 'Documento', key: 'documento', width: 15 },
       { header: 'Productos', key: 'productos', width: 10 },
       { header: 'Total', key: 'total', width: 15 },
       { header: 'Estado', key: 'estado', width: 12 }
     ]
 
-    // Agregar datos
-    ventas.forEach((venta: any) => {
+    
+    compras.forEach((compra: any) => {
       worksheet.addRow({
-        orden: venta.orden_venta || 'N/A',
-        fecha: venta.fecha ? new Date(venta.fecha).toLocaleDateString('es-ES') : 'N/A',
-        cliente: venta.cliente?.nombre || 'Sin cliente',
-        documento: venta.cliente?.documento || 'N/A',
-        productos: venta.detalles?.length || 0,
-        total: formatCurrency(venta.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0),
+        orden: compra.orden_compra || 'N/A',
+        fecha: compra.fecha ? new Date(compra.fecha).toLocaleDateString('es-ES') : 'N/A',
+        proveedor: compra.proveedor?.nombre || 'Sin proveedor',
+        documento: compra.proveedor?.documento || 'N/A',
+        productos: compra.detalles?.length || 0,
+        total: formatCurrency(compra.detalles?.reduce((sum: number, det: any) => sum + det.total, 0) || 0),
         estado: 'Completada'
       })
     })
 
-    // Estilo para el header
+    
     worksheet.getRow(1).font = { bold: true }
     worksheet.getRow(1).fill = {
       type: 'pattern',
@@ -176,11 +161,11 @@ export default function SalesHistory() {
       fgColor: { argb: 'FFE0E0E0' }
     }
 
-    // Generar nombre de archivo con fecha
+    
     const fecha = new Date().toISOString().split('T')[0]
-    const fileName = `ventas_${fecha}.xlsx`
+    const fileName = `compras_${fecha}.xlsx`
 
-    // Descargar archivo
+    
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = window.URL.createObjectURL(blob)
@@ -197,7 +182,7 @@ export default function SalesHistory() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Cargando historial de ventas...</p>
+            <p className="text-muted-foreground">Cargando historial de compras...</p>
           </div>
         </div>
       </div>
@@ -208,8 +193,8 @@ export default function SalesHistory() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Historial de Ventas</h1>
-          <p className="text-muted-foreground">Gestiona y revisa todas tus transacciones de ventas</p>
+          <h1 className="text-3xl font-bold tracking-tight">Historial de Compras</h1>
+          <p className="text-muted-foreground">Gestiona y revisa todas tus transacciones de compras</p>
         </div>
         <Button className="flex items-center gap-2" onClick={exportToExcel}>
           <Download className="h-4 w-4" />
@@ -219,72 +204,72 @@ export default function SalesHistory() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Ventas Registradas</CardTitle>
+          <CardTitle>Compras Registradas</CardTitle>
           <CardDescription>
-            Mostrando {startIndex + 1}-{Math.min(endIndex, filteredData.length)} de {filteredData.length} ventas
+            Mostrando {startIndex + 1}-{Math.min(endIndex, filteredData.length)} de {filteredData.length} compras
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Filtros */}
+
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Buscar por cliente, orden o producto..."
+                placeholder="Buscar por proveedor, orden o producto..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={clienteFilter} onValueChange={handleClienteChange}>
+            <Select value={proveedorFilter} onValueChange={handleProveedorChange}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Cliente" />
+                <SelectValue placeholder="Proveedor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los clientes</SelectItem>
-                {clientesUnicos.map((cliente) => (
-                  <SelectItem key={cliente} value={cliente}>
-                    {cliente}
+                <SelectItem value="all">Todos los proveedores</SelectItem>
+                {proveedoresUnicos.map((proveedor) => (
+                  <SelectItem key={proveedor} value={proveedor}>
+                    {proveedor}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Tabla */}
+          
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Orden Venta</TableHead>
+                  <TableHead>Orden Compra</TableHead>
                   <TableHead>Fecha</TableHead>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead>Proveedor</TableHead>
                   <TableHead>Documento</TableHead>
                   <TableHead>Productos</TableHead>
                   <TableHead className="text-center">Total Items</TableHead>
-                  <TableHead className="text-right">Total Venta</TableHead>
+                  <TableHead className="text-right">Total Compra</TableHead>
                   <TableHead className="text-center">Ver Orden</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentData.length > 0 ? (
-                  currentData.map((venta) => {
-                    const totalVenta = venta.detalles.reduce((sum, detalle) => sum + detalle.total, 0)
-                    const totalItems = venta.detalles.reduce((sum, detalle) => sum + detalle.cantidad, 0)
+                  currentData.map((compra) => {
+                    const totalCompra = compra.detalles.reduce((sum, detalle) => sum + detalle.total, 0)
+                    const totalItems = compra.detalles.reduce((sum, detalle) => sum + detalle.cantidad, 0)
                     
                     return (
-                      <TableRow key={venta.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium cursor-pointer hover:text-primary" onClick={() => handleViewVenta(venta.id)}>
-                          #{venta.orden_venta || "N/A"}
+                      <TableRow key={compra.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium cursor-pointer hover:text-primary" onClick={() => handleViewCompra(compra.id)}>
+                          #{compra.orden_compra || "N/A"}
                         </TableCell>
-                        <TableCell>{new Date(venta.fecha).toLocaleDateString('es-ES')}</TableCell>
-                        <TableCell>{venta.cliente.nombre}</TableCell>
-                        <TableCell>{venta.cliente.documento}</TableCell>
+                        <TableCell>{new Date(compra.fecha).toLocaleDateString('es-ES')}</TableCell>
+                        <TableCell>{compra.proveedor.nombre}</TableCell>
+                        <TableCell>{compra.proveedor.documento}</TableCell>
                         <TableCell>
                           <div className="text-sm">
                             <Badge variant="outline" className="text-xs">
-                              {venta.detalles?.length || 0} productos diferentes
+                              {compra.detalles?.length || 0} productos diferentes
                             </Badge>
                           </div>
                         </TableCell>
@@ -292,13 +277,13 @@ export default function SalesHistory() {
                           <Badge variant="secondary">{totalItems}</Badge>
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          S/. {totalVenta.toFixed(2)}
+                          S/. {totalCompra.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-center">
                           <Button 
                             variant="default" 
                             size="sm" 
-                            onClick={() => handleViewVenta(venta.id)}
+                            onClick={() => handleViewCompra(compra.id)}
                             className="ml-2"
                           >
                             <Eye className="mr-2 h-4 w-4" />
@@ -311,7 +296,7 @@ export default function SalesHistory() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      {ventas.length === 0 ? "No hay ventas registradas" : "No se encontraron ventas que coincidan con los filtros"}
+                      {compras.length === 0 ? "No hay compras registradas" : "No se encontraron compras que coincidan con los filtros"}
                     </TableCell>
                   </TableRow>
                 )}
@@ -319,7 +304,7 @@ export default function SalesHistory() {
             </Table>
           </div>
 
-          {/* Paginación */}
+          
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
               <div className="text-sm text-muted-foreground">
@@ -338,7 +323,7 @@ export default function SalesHistory() {
                   Anterior
                 </Button>
 
-                {/* Números de página */}
+                
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNumber

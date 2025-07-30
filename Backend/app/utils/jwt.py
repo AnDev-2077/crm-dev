@@ -8,7 +8,7 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("secret_key")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 120
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 def crear_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import axios from "axios"
 import { Edit, Save, X, Upload } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -58,6 +60,7 @@ interface TipoUnidad {
 
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
   const [product, setProduct] = useState<Product | null>(null)
   const [editedProduct, setEditedProduct] = useState<Product | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -85,7 +88,16 @@ export default function ProductDetails() {
     fetchData()
   }, [id])
 
-  const handleEdit = () => setIsEditing(true)
+  const handleEdit = () => {
+    if (user?.rol === "trabajador") {
+      toast.error("No tienes permisos para editar productos", {
+        description: "Solo los administradores pueden editar productos.",
+        duration: 4000,
+      })
+      return
+    }
+    setIsEditing(true)
+  }
 
   const handleCancel = () => {
     setIsEditing(false)
@@ -169,7 +181,10 @@ export default function ProductDetails() {
             )}
 
             {!isEditing ? (
-              <Button onClick={handleEdit}>
+              <Button 
+                onClick={handleEdit}
+                title={user?.rol === "trabajador" ? "Solo los administradores pueden editar productos" : "Editar producto"}
+              >
                 <Edit className="w-4 h-4 mr-1" /> Editar
               </Button>
             ) : (

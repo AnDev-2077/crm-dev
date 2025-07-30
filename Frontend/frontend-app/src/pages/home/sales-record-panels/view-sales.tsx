@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, ShoppingCart, User, FileText, Calendar, DollarSign } from "lucide-react"
+import { ArrowLeft, ShoppingCart, User, FileText, Calendar } from "lucide-react"
 import VentaBoletaExport from "@/pages/home/templates/ventaBoletaExport"
 
 interface Venta {
@@ -20,6 +20,11 @@ interface Venta {
     documento?: string
     correo?: string
     telefono?: string
+  }
+  vendedor?: {
+    id?: number
+    nombre?: string
+    rol?: string
   }
   detalles?: DetalleVenta[]
 }
@@ -211,7 +216,7 @@ export default function SaleDetail() {
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="text-muted-foreground">Vendedor:</span>
-                <span className="font-medium">Carlos Ruiz</span>
+                <span className="font-medium">{venta.vendedor?.nombre || "Sin vendedor"}</span>
               </div>
             </CardContent>
           </Card>

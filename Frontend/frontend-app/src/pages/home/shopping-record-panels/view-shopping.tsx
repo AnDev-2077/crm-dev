@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, ShoppingCart, User, FileText, Calendar, DollarSign } from "lucide-react"
+import { ArrowLeft, ShoppingCart, User, FileText, Calendar  } from "lucide-react"
 import BoletaExport from "@/pages/home/templates/boletaExport"
 
 interface Compra {

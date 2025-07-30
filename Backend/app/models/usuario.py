@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy.orm import relationship
 from ..database import Base
 
 class Usuario(Base):
@@ -11,3 +12,6 @@ class Usuario(Base):
     contraseña = Column(String(255), nullable=False)
     rol = Column(String(50), nullable=False)
     is_active = Column(Boolean, default=True, nullable=True)
+    
+    # Agregar esta línea para la relación con ventas
+    ventas = relationship("Venta", back_populates="vendedor")

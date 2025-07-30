@@ -1,4 +1,4 @@
-  // compraBoletaPDF.tsx
+  
   import {
     Document,
     Page,
@@ -7,7 +7,7 @@
     StyleSheet,
     Image,
   } from "@react-pdf/renderer";
-  import BoletaExport from "./boletaExport";
+ 
 
   const styles = StyleSheet.create({
     page: {
