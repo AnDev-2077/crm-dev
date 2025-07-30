@@ -65,47 +65,63 @@ create table productos
         foreign key (tUnidad) references tunidad (id)
 );
 
-CREATE TABLE tUnidad (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL
+create table detalle_compra
+(
+    id              int auto_increment
+        primary key,
+    compra_id       int            not null,
+    producto_id     int            not null,
+    cantidad        int            not null,
+    precio_unitario decimal(10, 2) not null,
+    total           decimal(10, 2) as ((`cantidad` * `precio_unitario`)) stored,
+    constraint detalle_compra_ibfk_1
+        foreign key (compra_id) references compras (id)
+            on delete cascade,
+    constraint detalle_compra_ibfk_2
+        foreign key (producto_id) references productos (id)
 );
 
-CREATE TABLE proveedor_producto (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    proveedor_id INT NOT NULL,
-    producto_id INT NOT NULL,
-    FOREIGN KEY (proveedor_id) REFERENCES Proveedores(id),
-    FOREIGN KEY (producto_id) REFERENCES Productos(id) 
+create index compra_id
+    on detalle_compra (compra_id);
+
+create index producto_id
+    on detalle_compra (producto_id);
+
+create index tUnidad
+    on productos (tUnidad);
+
+create table proveedor_producto
+(
+    id           int auto_increment
+        primary key,
+    proveedor_id int not null,
+    producto_id  int not null,
+    constraint proveedor_producto_ibfk_1
+        foreign key (proveedor_id) references proveedores (id),
+    constraint proveedor_producto_ibfk_2
+        foreign key (producto_id) references productos (id)
 );
 
-CREATE TABLE clientes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    correo VARCHAR(100),
-    telefono VARCHAR(20),
-    direccion VARCHAR(100),    
-    is_active tinyint(1) default 1 NULL,
-    documento VARCHAR(50),
-	tipoDocumento VARCHAR(50) NOT NULL default 'RUC'
-);
+create index producto_id
+    on proveedor_producto (producto_id);
 
-CREATE TABLE compras (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    proveedor_id INT NOT NULL,
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (proveedor_id) REFERENCES proveedores(id),
-    orden_compra VARCHAR(20) UNIQUE
-);
+create index proveedor_id
+    on proveedor_producto (proveedor_id);
 
-CREATE TABLE detalle_compra (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    compra_id INT NOT NULL,
-    producto_id INT NOT NULL,
-    cantidad INT NOT NULL,
-    precio_unitario DECIMAL(10, 2) NOT NULL,
-    total DECIMAL(10,2) GENERATED ALWAYS AS (cantidad * precio_unitario) STORED,
-    FOREIGN KEY (compra_id) REFERENCES compras(id) ON DELETE CASCADE,
-    FOREIGN KEY (producto_id) REFERENCES productos(id)
+create table usuario
+(
+    id         bigint unsigned auto_increment
+        primary key,
+    nombre     varchar(50)          not null,
+    apellidos  varchar(100)         not null,
+    correo     varchar(100)         not null,
+    contraseña varchar(255)         not null,
+    rol        varchar(50)          not null,
+    is_active  tinyint(1) default 1 null,
+    constraint correo
+        unique (correo),
+    constraint id
+        unique (id)
 );
 
 create table ventas
@@ -145,6 +161,4 @@ create index venta_id
 
 create index cliente_id
     on ventas (cliente_id);
-
-
 ```
