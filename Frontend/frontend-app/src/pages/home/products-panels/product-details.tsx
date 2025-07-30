@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import axios from "axios"
 import { Edit, Save, X, Upload } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
@@ -61,6 +61,7 @@ interface TipoUnidad {
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [product, setProduct] = useState<Product | null>(null)
   const [editedProduct, setEditedProduct] = useState<Product | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -175,8 +176,8 @@ export default function ProductDetails() {
           <CardTitle className="text-2xl">Detalles del Producto</CardTitle>
           <div className="flex gap-2">
             {!isEditing && (
-              <Button type="button" variant="outline">
-                <a href="/home/products-panel">Volver</a>
+              <Button type="button" variant="outline" onClick={() => navigate("/home/products-panel")}>
+                Volver
               </Button>
             )}
 

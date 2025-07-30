@@ -7,6 +7,7 @@ import axios from "axios"
 import { Upload, X } from "lucide-react"
 import { toast } from "sonner"
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -40,6 +41,7 @@ type tUnidad = {
   nombre: string
 }
 export default function AddProductForm() {
+  const navigate = useNavigate();
   const [unitTypes, setUnitTypes] = useState<tUnidad[]>([])
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<Proveedor | null>(null)
   const [productImage, setProductImage] = useState<File | null>(null) 
@@ -447,8 +449,8 @@ export default function AddProductForm() {
         </div>
 
         <div className="flex justify-end space-x-4 mt-6">
-          <Button type="button" variant="outline" >
-            <a href="/home/products-panel">Volver</a>
+          <Button type="button" variant="outline" onClick={() => navigate("/home/products-panel")}>
+            Volver
           </Button>
           <Button type="submit" >
             Guardar Producto
