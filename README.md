@@ -129,12 +129,14 @@ create table ventas
     id          int auto_increment
         primary key,
     cliente_id  int                                 not null,
+    vendedor_id BIGINT UNSIGNED,
     fecha       timestamp default CURRENT_TIMESTAMP null,
     orden_venta varchar(20)                         null,
     constraint orden_venta
         unique (orden_venta),
     constraint ventas_ibfk_1
         foreign key (cliente_id) references clientes (id)
+FOREIGN KEY (vendedor_id) REFERENCES usuario(id),
 );
 
 create table detalle_venta
